@@ -1,0 +1,223 @@
+# Full stack: Monitour + Postgres + Redis + WesenseU (AI) + Celery workers.
+# Prerequisite: WesenseU repo cloned next to Monitour (../WesenseU/backend exists).
+#
+# Start:  docker compose up --build -d
+# Logs:  docker compose logs -f backend
+# Stop:   docker compose down
+#
+# Hybrid (Docker DB/Redis only, APIs on host):  docker compose up -d db redis wesenseu_db wesenseu_redis
+# Stop app containers only:  powershell -File scripts/docker-stop-app-containers.ps1
+#
+# Schema + seed + migrations on Monitour backend boot: init_db then alembic upgrade head (see backend command).
+# Manual: docker compose exec backend alembic upgrade head && docker compose exec backend python -m app.db.init_db
+
+networks:
+  monitour:
+    driver: bridge
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: monitour_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: monitour
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: monitour_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monitour -d monitour_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - monitour
+
+  redis:
+    image: redis:7-alpine
+    container_name: monitour_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - monitour
+
+  wesenseu_db:
+    image: postgres:16-alpine
+    container_name: monitour_wesenseu_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wesenseu
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: wesenseu_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - wesenseu_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wesenseu -d wesenseu_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - monitour
+
+  wesenseu_redis:
+    image: redis:7-alpine
+    container_name: monitour_wesenseu_redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - monitour
+
+  wesenseu:
+    build:
+      context: ../WesenseU/backend
+      dockerfile: Dockerfile.compose
+    container_name: wesenseu_api
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://wesenseu:password@wesenseu_db:5432/wesenseu_db
+      SYNC_DATABASE_URL: postgresql://wesenseu:password@wesenseu_db:5432/wesenseu_db
+      REDIS_URL: redis://wesenseu_redis:6379/0
+      CELERY_BROKER_URL: redis://wesenseu_redis:6379/1
+      CELERY_RESULT_BACKEND: redis://wesenseu_redis:6379/2
+      API_KEY: wesenseu-api-key-for-enterweu
+    ports:
+      - "8001:8001"
+    volumes:
+      - wesenseu_media:/app/media
+    depends_on:
+      wesenseu_db:
+        condition: service_healthy
+      wesenseu_redis:
+        condition: service_healthy
+    networks:
+      - monitour
+
+  wesenseu_worker:
+    build:
+      context: ../WesenseU/backend
+      dockerfile: Dockerfile.compose
+    container_name: wesenseu_worker
+    restart: unless-stopped
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "--loglevel=info"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://wesenseu:password@wesenseu_db:5432/wesenseu_db
+      SYNC_DATABASE_URL: postgresql://wesenseu:password@wesenseu_db:5432/wesenseu_db
+      REDIS_URL: redis://wesenseu_redis:6379/0
+      CELERY_BROKER_URL: redis://wesenseu_redis:6379/1
+      CELERY_RESULT_BACKEND: redis://wesenseu_redis:6379/2
+      API_KEY: wesenseu-api-key-for-enterweu
+    volumes:
+      - wesenseu_media:/app/media
+    depends_on:
+      wesenseu_db:
+        condition: service_healthy
+      wesenseu_redis:
+        condition: service_healthy
+    networks:
+      - monitour
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: monitour_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://monitour:password@db:5432/monitour_db
+      SYNC_DATABASE_URL: postgresql://monitour:password@db:5432/monitour_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
+      DEBUG: "true"
+      FRONTEND_URL: http://localhost:3000
+      WESENSEU_API_URL: http://wesenseu:8001/api/v1
+      WESENSEU_API_KEY: wesenseu-api-key-for-enterweu
+      MONITOUR_PUBLIC_URL: http://backend:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - media_storage:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      wesenseu:
+        condition: service_started
+    command: >
+      sh -c "python -m app.db.init_db && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    networks:
+      - monitour
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: monitour_celery_worker
+    restart: unless-stopped
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "--loglevel=info"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://monitour:password@db:5432/monitour_db
+      SYNC_DATABASE_URL: postgresql://monitour:password@db:5432/monitour_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
+      DEBUG: "true"
+      WESENSEU_API_URL: http://wesenseu:8001/api/v1
+      WESENSEU_API_KEY: wesenseu-api-key-for-enterweu
+      MONITOUR_PUBLIC_URL: http://backend:8000
+    volumes:
+      - ./backend:/app
+      - media_storage:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      wesenseu:
+        condition: service_started
+      backend:
+        condition: service_started
+    networks:
+      - monitour
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: monitour_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - monitour
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_storage:
+  wesenseu_pgdata:
+  wesenseu_media:
