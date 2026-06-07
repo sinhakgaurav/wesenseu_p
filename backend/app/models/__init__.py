@@ -1,4 +1,8 @@
 from app.models.customer import Customer
+from app.models.contact import CustomerContact, PropertyContact
+from app.models.catalog import CatalogItem, PropertyCatalogSelection, RoomCategoryAmenity
+from app.models.guest_stay import GuestStay
+from app.models.onboarding import OnboardingSession
 from app.models.property import Property
 from app.models.property_group import PropertyGroup
 from app.models.property_room_category import PropertyRoomCategory
@@ -21,9 +25,21 @@ from app.models.module_config import ModuleConfig
 from app.models.support import SupportConversation, SupportMessage
 from app.models.laundry import LaundryOrder
 from app.models.task_sla import TaskSlaPolicy
+from app.models.p2_extensions import (
+    DepartmentCatalogDuty,
+    PropertySchedule,
+    EmployeeSchedule,
+    PropertyOutlet,
+    PropertyMenuItem,
+    RoomVariant,
+    TaskInventoryRule,
+)
 
 __all__ = [
-    "Customer", "Property", "PropertyGroup", "PropertyRoomCategory", "Department", "Employee",
+    "Customer", "CustomerContact", "PropertyContact",
+    "CatalogItem", "PropertyCatalogSelection", "RoomCategoryAmenity",
+    "GuestStay", "OnboardingSession",
+    "Property", "PropertyGroup", "PropertyRoomCategory", "Department", "Employee",
     "Room", "Task", "TaskMedia", "RoomVerification",
     "InventoryItem", "InventoryTransaction", "Vendor",
     "Ticket", "TicketComment", "Order", "OrderItem",
@@ -34,4 +50,6 @@ __all__ = [
     "PropertyApproval", "ModuleConfig",
     "SupportConversation", "SupportMessage",
     "LaundryOrder", "TaskSlaPolicy",
+    "DepartmentCatalogDuty", "PropertySchedule", "EmployeeSchedule",
+    "PropertyOutlet", "PropertyMenuItem", "RoomVariant", "TaskInventoryRule",
 ]

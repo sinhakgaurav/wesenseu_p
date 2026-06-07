@@ -51,6 +51,7 @@ class TicketResponse(TicketBase):
     ticket_number: str
     property_id: uuid.UUID
     room_id: Optional[uuid.UUID] = None
+    guest_stay_id: Optional[uuid.UUID] = None
     department_id: Optional[uuid.UUID] = None
     assigned_to: Optional[uuid.UUID] = None
     status: str

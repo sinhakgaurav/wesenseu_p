@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ShoppingCart, Clock, CheckCircle, Package, Plus, X, ChefHat, Loader2 } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/Badge'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
 import api from '@/lib/api'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 interface OrderItem { item_name: string; quantity: number; unit_price: number }
 interface Order {
@@ -26,7 +26,7 @@ const ORDER_TYPES = ['food', 'service', 'amenity', 'extra_bed', 'laundry']
 
 export function OrdersPage() {
   const queryClient = useQueryClient()
-  const { user } = useSelector((s: RootState) => s.auth)
+  const { propertyId, enabled } = useAdminPropertyId()
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState('')
   const [form, setForm] = useState({
@@ -35,13 +35,15 @@ export function OrdersPage() {
   })
 
   const { data: orders = [], isLoading } = useQuery<Order[]>({
-    queryKey: ['orders'],
-    queryFn: () => api.get('/orders').then(r => r.data),
+    queryKey: ['orders', propertyId],
+    enabled,
+    queryFn: () => api.get(`/orders?property_id=${propertyId}`).then(r => r.data),
   })
 
   const { data: rooms = [] } = useQuery<any[]>({
-    queryKey: ['rooms'],
-    queryFn: () => api.get('/rooms').then(r => r.data),
+    queryKey: ['rooms', propertyId],
+    enabled,
+    queryFn: () => api.get(`/rooms?property_id=${propertyId}&limit=200`).then(r => r.data),
   })
 
   const updateMutation = useMutation({
@@ -57,7 +59,7 @@ export function OrdersPage() {
 
   const handleCreate = () => {
     createMutation.mutate({
-      property_id: user?.property_id,
+      property_id: propertyId,
       room_id: form.room_id,
       order_type: form.order_type,
       guest_name: form.guest_name,
@@ -73,6 +75,7 @@ export function OrdersPage() {
   const revenue = orders.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total_amount, 0)
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -246,5 +249,6 @@ export function OrdersPage() {
         </div>
       )}
     </div>
+    </RequirePropertyScope>
   )
 }

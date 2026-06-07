@@ -12,19 +12,16 @@ from app.models.ticket import Ticket
 from app.models.employee import Employee
 from app.models.inventory import InventoryItem
 from app.models.surveillance import SurveillanceEvent
-from app.schemas.dashboard import DashboardStats
+from app.schemas.dashboard import DashboardStats, PlatformDashboardStats
 from app.api.v1.deps import get_current_user
+from app.models.property import Property
+from app.models.customer import Customer
+from fastapi import HTTPException
 
 router = APIRouter()
 
 
-@router.get("/stats", response_model=DashboardStats)
-async def get_dashboard_stats(
-    property_id: Optional[uuid.UUID] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: Employee = Depends(get_current_user),
-):
-    prop_id = property_id or current_user.property_id
+async def _stats_for_property(db: AsyncSession, prop_id: uuid.UUID) -> DashboardStats:
     today = datetime.utcnow().date()
 
     # Room stats
@@ -147,7 +144,7 @@ async def get_dashboard_stats(
         )
 
     return DashboardStats(
-        total_rooms=total_rooms,
+        total_rooms=total_rooms or 0,
         occupied_rooms=occupied_rooms,
         vacant_rooms=vacant_rooms,
         cleaning_pending=cleaning_pending,
@@ -167,4 +164,84 @@ async def get_dashboard_stats(
         surveillance_alerts=surveillance_alerts,
         room_status_chart=room_status_chart,
         task_completion_rate=task_completion_rate,
+    )
+
+
+@router.get("/stats", response_model=DashboardStats)
+async def get_dashboard_stats(
+    property_id: Optional[uuid.UUID] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    prop_id = property_id or current_user.property_id
+    if not prop_id:
+        if current_user.role == "super_admin":
+            first = (await db.execute(select(Property.id).where(Property.is_active == True).limit(1))).scalar_one_or_none()
+            if not first:
+                return DashboardStats(
+                    total_rooms=0, occupied_rooms=0, vacant_rooms=0, cleaning_pending=0,
+                    ready_rooms=0, maintenance_rooms=0, active_tasks=0, pending_tasks=0,
+                    completed_tasks_today=0, overdue_tasks=0, open_tickets=0,
+                    resolved_tickets_today=0, critical_tickets=0, total_employees=0,
+                    available_employees=0, employees_on_duty=0, inventory_alerts=0,
+                    surveillance_alerts=0, room_status_chart=[], task_completion_rate=0.0,
+                )
+            prop_id = first
+        else:
+            raise HTTPException(status_code=400, detail="property_id is required")
+    return await _stats_for_property(db, prop_id)
+
+
+@router.get("/platform", response_model=PlatformDashboardStats)
+async def get_platform_dashboard(
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    """Aggregated stats across all properties (super_admin)."""
+    if current_user.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+
+    total_properties = (await db.execute(select(func.count(Property.id)))).scalar() or 0
+    active_properties = (
+        await db.execute(select(func.count(Property.id)).where(Property.is_active == True))
+    ).scalar() or 0
+    total_customers = (await db.execute(select(func.count(Customer.id)))).scalar() or 0
+    total_rooms = (
+        await db.execute(select(func.count(Room.id)).where(Room.is_active == True))
+    ).scalar() or 0
+    open_tasks = (
+        await db.execute(
+            select(func.count(Task.id)).where(Task.status.notin_(["approved", "rejected", "cancelled", "completed"]))
+        )
+    ).scalar() or 0
+    open_tickets = (
+        await db.execute(
+            select(func.count(Ticket.id)).where(Ticket.status.notin_(["resolved", "closed"]))
+        )
+    ).scalar() or 0
+    total_employees = (await db.execute(select(func.count(Employee.id)))).scalar() or 0
+
+    props = (await db.execute(select(Property).where(Property.is_active == True).order_by(Property.name))).scalars().all()
+    property_summaries = []
+    for p in props:
+        s = await _stats_for_property(db, p.id)
+        property_summaries.append({
+            "property_id": str(p.id),
+            "property_name": p.name,
+            "city": p.city,
+            "total_rooms": s.total_rooms,
+            "open_tasks": s.active_tasks + s.pending_tasks,
+            "open_tickets": s.open_tickets,
+            "occupancy_pct": round((s.occupied_rooms / s.total_rooms * 100), 1) if s.total_rooms else 0,
+        })
+
+    return PlatformDashboardStats(
+        total_properties=total_properties,
+        active_properties=active_properties,
+        total_customers=total_customers,
+        total_rooms=total_rooms,
+        open_tasks=open_tasks,
+        open_tickets=open_tickets,
+        total_employees=total_employees,
+        properties=property_summaries,
     )

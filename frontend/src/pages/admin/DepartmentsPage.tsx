@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Building2, Search, Pencil, Trash2 } from 'lucide-react'
 import api from '@/lib/api'
-import type { Department, Property } from '@/lib/types'
+import type { Department, Employee } from '@/lib/types'
+import { usePropertyScope } from '@/context/PropertyScopeContext'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 import { Modal } from '@/components/ui/Modal'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
@@ -13,34 +15,51 @@ export function DepartmentsPage() {
   const qc = useQueryClient()
   const user = useSelector((state: RootState) => state.auth.user)
   const canManage = user?.role === 'property_manager' || user?.role === 'super_admin'
+  const { effectivePropertyId } = usePropertyScope()
 
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>('')
   const [includeInactive, setIncludeInactive] = useState(false)
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [editDept, setEditDept] = useState<Department | null>(null)
-  const [form, setForm] = useState({ name: '', description: '' })
+  const [form, setForm] = useState({ name: '', description: '', manager_id: '' })
+  const [dutiesDept, setDutiesDept] = useState<Department | null>(null)
+  const [selectedDutyIds, setSelectedDutyIds] = useState<string[]>([])
 
-  const { data: properties = [] } = useQuery<Property[]>({
-    queryKey: ['properties', 'all'],
-    queryFn: () => api.get('/properties').then(r => r.data),
-    enabled: user?.role === 'super_admin',
+  const { data: staff = [] } = useQuery<Employee[]>({
+    queryKey: ['employees-dept', effectivePropertyId],
+    enabled: !!effectivePropertyId,
+    queryFn: () => api.get(`/employees?property_id=${effectivePropertyId}&limit=100`).then(r => r.data),
+  })
+
+  const { data: dutyCatalog = [] } = useQuery<{ id: string; display_name: string }[]>({
+    queryKey: ['catalog-duties'],
+    queryFn: () => api.get('/catalog/items?kind=department_duty').then(r => r.data),
+  })
+
+  const { data: deptDuties = [] } = useQuery<{ id: string }[]>({
+    queryKey: ['dept-duties', dutiesDept?.id],
+    enabled: !!dutiesDept?.id,
+    queryFn: () => api.get(`/departments/${dutiesDept!.id}/duties`).then(r => r.data),
   })
 
   useEffect(() => {
-    if (user?.role === 'super_admin' && properties.length && !selectedPropertyId) {
-      setSelectedPropertyId(properties[0].id)
-    }
-  }, [user?.role, properties, selectedPropertyId])
+    if (deptDuties.length) setSelectedDutyIds(deptDuties.map(r => r.id))
+  }, [deptDuties])
 
-  const effectivePropertyId = user?.role === 'super_admin' ? selectedPropertyId : (user?.property_id || '')
+  const saveDutiesMut = useMutation({
+    mutationFn: () => api.put(`/departments/${dutiesDept!.id}/duties`, { catalog_item_ids: selectedDutyIds }),
+    onSuccess: () => {
+      toast.success('Duties saved')
+      setDutiesDept(null)
+    },
+  })
 
   const { data: departments = [], isLoading } = useQuery<Department[]>({
     queryKey: ['departments', effectivePropertyId, includeInactive],
-    enabled: user?.role === 'super_admin' ? !!effectivePropertyId : !!user?.property_id,
+    enabled: !!effectivePropertyId,
     queryFn: async () => {
       const params = new URLSearchParams()
-      if (user?.role === 'super_admin') params.set('property_id', effectivePropertyId)
+      if (effectivePropertyId) params.set('property_id', effectivePropertyId)
       if (includeInactive) params.set('include_inactive', 'true')
       const { data } = await api.get(`/departments?${params}`)
       return data
@@ -53,11 +72,12 @@ export function DepartmentsPage() {
         property_id: effectivePropertyId,
         name: form.name.trim(),
         description: form.description.trim() || undefined,
+        manager_id: form.manager_id || undefined,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['departments'] })
       setShowCreate(false)
-      setForm({ name: '', description: '' })
+      setForm({ name: '', description: '', manager_id: '' })
       toast.success('Department created')
     },
     onError: (err: unknown) => {
@@ -71,6 +91,7 @@ export function DepartmentsPage() {
       api.patch(`/departments/${editDept!.id}`, {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
+        manager_id: form.manager_id || undefined,
         is_active: editDept!.is_active,
       }),
     onSuccess: () => {
@@ -98,27 +119,8 @@ export function DepartmentsPage() {
 
   if (isLoading) return <PageLoader />
 
-  if (user?.role === 'super_admin' && !effectivePropertyId) {
-    return (
-      <div className="p-6">
-        <h1 className="page-title">Departments</h1>
-        <p className="text-gray-500 text-sm mt-2">Select a property to manage departments.</p>
-        {properties.length > 0 && (
-          <select
-            className="mt-4 border border-gray-200 rounded-lg px-3 py-2 text-sm"
-            value={selectedPropertyId}
-            onChange={(e) => setSelectedPropertyId(e.target.value)}
-          >
-            {properties.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        )}
-      </div>
-    )
-  }
-
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -131,7 +133,7 @@ export function DepartmentsPage() {
         {canManage && (
           <button
             type="button"
-            onClick={() => { setForm({ name: '', description: '' }); setShowCreate(true) }}
+            onClick={() => { setForm({ name: '', description: '', manager_id: '' }); setShowCreate(true) }}
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
@@ -141,20 +143,6 @@ export function DepartmentsPage() {
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6 items-center">
-        {user?.role === 'super_admin' && properties.length > 0 && (
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Property</label>
-            <select
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"
-              value={selectedPropertyId}
-              onChange={(e) => setSelectedPropertyId(e.target.value)}
-            >
-              {properties.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
         <div className="relative flex-1 min-w-[200px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
@@ -208,10 +196,20 @@ export function DepartmentsPage() {
                       className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
                       onClick={() => {
                         setEditDept(d)
-                        setForm({ name: d.name, description: d.description || '' })
+                        setForm({ name: d.name, description: d.description || '', manager_id: d.manager_id || '' })
                       }}
                     >
                       <Pencil className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-sm"
+                      onClick={() => {
+                        setDutiesDept(d)
+                        setSelectedDutyIds([])
+                      }}
+                    >
+                      Duties
                     </button>
                     {d.is_active && (
                       <button
@@ -252,6 +250,19 @@ export function DepartmentsPage() {
               placeholder="Optional"
             />
           </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Department manager</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              value={form.manager_id}
+              onChange={(e) => setForm(f => ({ ...f, manager_id: e.target.value }))}
+            >
+              <option value="">— None —</option>
+              {staff.map(e => (
+                <option key={e.id} value={e.id}>{e.full_name}</option>
+              ))}
+            </select>
+          </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
             <button
@@ -285,6 +296,19 @@ export function DepartmentsPage() {
                 onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
               />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Department manager</label>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                value={form.manager_id}
+                onChange={(e) => setForm(f => ({ ...f, manager_id: e.target.value }))}
+              >
+                <option value="">— None —</option>
+                {staff.map(e => (
+                  <option key={e.id} value={e.id}>{e.full_name}</option>
+                ))}
+              </select>
+            </div>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -307,6 +331,28 @@ export function DepartmentsPage() {
           </div>
         )}
       </Modal>
+
+      <Modal isOpen={!!dutiesDept} onClose={() => setDutiesDept(null)} title={`Duties — ${dutiesDept?.name}`}>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {dutyCatalog.map(d => (
+            <label key={d.id} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={selectedDutyIds.includes(d.id)}
+                onChange={e => {
+                  if (e.target.checked) setSelectedDutyIds(ids => [...ids, d.id])
+                  else setSelectedDutyIds(ids => ids.filter(x => x !== d.id))
+                }}
+              />
+              {d.display_name}
+            </label>
+          ))}
+        </div>
+        <button type="button" className="btn-primary w-full mt-4" onClick={() => saveDutiesMut.mutate()}>
+          Save duties
+        </button>
+      </Modal>
     </div>
+    </RequirePropertyScope>
   )
 }

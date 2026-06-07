@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List, Optional
@@ -11,6 +11,8 @@ from app.schemas.attendance import (
     AttendanceCheckIn, AttendanceCheckOut,
     AttendanceResponse, AttendanceSummary,
 )
+from app.schemas.p2 import AttendanceRecordCreate, EmployeeScheduleUpdate, ImportResult
+from app.models.p2_extensions import EmployeeSchedule
 from app.api.v1.deps import get_current_user
 
 router = APIRouter()
@@ -180,6 +182,118 @@ async def attendance_summary(
         ))
 
     return summaries
+
+
+@router.post("/records", response_model=AttendanceResponse)
+async def manager_set_attendance(
+    data: AttendanceRecordCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role not in ("super_admin", "property_manager", "dept_manager"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    emp = (await db.execute(select(Employee).where(Employee.id == data.employee_id))).scalar_one_or_none()
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    record = (
+        await db.execute(
+            select(Attendance).where(Attendance.employee_id == data.employee_id, Attendance.date == data.record_date)
+        )
+    ).scalar_one_or_none()
+    if not record:
+        record = Attendance(
+            employee_id=data.employee_id,
+            property_id=emp.property_id,
+            date=data.record_date,
+            status=data.status,
+            notes=data.notes,
+        )
+        db.add(record)
+    else:
+        record.status = data.status
+        if data.notes:
+            record.notes = data.notes
+    await db.commit()
+    await db.refresh(record)
+    return _with_hours(record)
+
+
+@router.put("/employees/{employee_id}/schedule")
+async def set_employee_schedule(
+    employee_id: uuid.UUID,
+    data: EmployeeScheduleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role not in ("super_admin", "property_manager", "dept_manager"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    sched = (
+        await db.execute(select(EmployeeSchedule).where(EmployeeSchedule.employee_id == employee_id))
+    ).scalar_one_or_none()
+    if not sched:
+        sched = EmployeeSchedule(employee_id=employee_id)
+        db.add(sched)
+    sched.weekly_off_days = data.weekly_off_days
+    sched.lunch_start = data.lunch_start
+    sched.lunch_end = data.lunch_end
+    await db.commit()
+    return {"employee_id": str(employee_id), "weekly_off_days": sched.weekly_off_days}
+
+
+@router.post("/import", response_model=ImportResult)
+async def import_attendance_csv(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    """Manager confirmation import: employee_code,date,status"""
+    if current_user.role not in ("super_admin", "property_manager", "dept_manager"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    import csv
+    import io
+
+    content = (await file.read()).decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(content))
+    created = updated = 0
+    errors: list[str] = []
+    for i, row in enumerate(reader, start=2):
+        code = (row.get("employee_code") or row.get("code") or "").strip()
+        date_str = (row.get("date") or "").strip()
+        status_val = (row.get("status") or "present").strip().lower()
+        if not code or not date_str:
+            errors.append(f"Row {i}: missing employee_code or date")
+            continue
+        emp = (
+            await db.execute(select(Employee).where(Employee.employee_code == code))
+        ).scalar_one_or_none()
+        if not emp:
+            errors.append(f"Row {i}: unknown employee_code {code}")
+            continue
+        try:
+            rec_date = date.fromisoformat(date_str)
+        except ValueError:
+            errors.append(f"Row {i}: invalid date {date_str}")
+            continue
+        existing = (
+            await db.execute(
+                select(Attendance).where(Attendance.employee_id == emp.id, Attendance.date == rec_date)
+            )
+        ).scalar_one_or_none()
+        if existing:
+            existing.status = status_val
+            updated += 1
+        else:
+            db.add(
+                Attendance(
+                    employee_id=emp.id,
+                    property_id=emp.property_id,
+                    date=rec_date,
+                    status=status_val,
+                )
+            )
+            created += 1
+    await db.commit()
+    return ImportResult(created=created, updated=updated, errors=errors)
 
 
 def _with_hours(record: Attendance) -> AttendanceResponse:

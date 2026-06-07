@@ -8,20 +8,54 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
 import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 export function RoomCategoriesPage() {
   const qc = useQueryClient()
   const user = useSelector((s: RootState) => s.auth.user)
-  const propertyId = user?.property_id
+  const { propertyId, enabled } = useAdminPropertyId()
   const canManage = user?.role === 'super_admin' || user?.role === 'property_manager'
 
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<PropertyRoomCategory | null>(null)
   const [form, setForm] = useState({ code: '', display_name: '', description: '', sort_order: 0 })
+  const [amenitiesCat, setAmenitiesCat] = useState<PropertyRoomCategory | null>(null)
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([])
+
+  const { data: availability = [] } = useQuery<{ category_name: string; vacant: number; occupied: number }[]>({
+    queryKey: ['category-availability', propertyId],
+    enabled,
+    queryFn: () => api.get(`/room-categories/availability?property_id=${propertyId}`).then(r => r.data),
+  })
+
+  const { data: amenityCatalog = [] } = useQuery<{ id: string; display_name: string }[]>({
+    queryKey: ['catalog-amenities'],
+    queryFn: () => api.get('/catalog/items?kind=amenity').then(r => r.data),
+  })
+
+  const saveAmenities = useMutation({
+    mutationFn: () =>
+      api.put(`/catalog/room-categories/${amenitiesCat!.id}/amenities`, { catalog_item_ids: selectedAmenityIds }),
+    onSuccess: () => {
+      toast.success('Amenities saved')
+      setAmenitiesCat(null)
+    },
+  })
+
+  const openAmenities = async (c: PropertyRoomCategory) => {
+    setAmenitiesCat(c)
+    try {
+      const { data } = await api.get(`/catalog/room-categories/${c.id}/amenities`)
+      setSelectedAmenityIds((data as { id: string }[]).map(x => x.id))
+    } catch {
+      setSelectedAmenityIds([])
+    }
+  }
 
   const { data: categories = [], isLoading } = useQuery<PropertyRoomCategory[]>({
     queryKey: ['room-categories', propertyId],
-    enabled: !!propertyId,
+    enabled,
     queryFn: async () => {
       const { data } = await api.get(`/room-categories?property_id=${propertyId}&include_inactive=true`)
       return data
@@ -83,12 +117,10 @@ export function RoomCategoriesPage() {
     setShowModal(true)
   }
 
-  if (!propertyId) {
-    return <p className="p-6 text-gray-500">No property assigned to your account.</p>
-  }
   if (isLoading) return <PageLoader />
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -107,6 +139,17 @@ export function RoomCategoriesPage() {
           </button>
         )}
       </div>
+
+      {availability.length > 0 && (
+        <div className="card mb-4 grid sm:grid-cols-3 gap-3 text-sm">
+          {availability.map(a => (
+            <div key={a.category_name} className="p-3 bg-gray-50 rounded-lg">
+              <p className="font-medium">{a.category_name}</p>
+              <p className="text-gray-500">Vacant {a.vacant} · Occupied {a.occupied}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
@@ -135,6 +178,14 @@ export function RoomCategoriesPage() {
                       title="Edit"
                     >
                       <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAmenities(c)}
+                      className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 inline-flex text-xs"
+                      title="Amenities"
+                    >
+                      Amenities
                     </button>
                     {c.is_active && (
                       <button
@@ -217,6 +268,28 @@ export function RoomCategoriesPage() {
           </div>
         </div>
       </Modal>
+
+      <Modal isOpen={!!amenitiesCat} onClose={() => setAmenitiesCat(null)} title={`Amenities — ${amenitiesCat?.display_name}`}>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {amenityCatalog.map(a => (
+            <label key={a.id} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={selectedAmenityIds.includes(a.id)}
+                onChange={e => {
+                  if (e.target.checked) setSelectedAmenityIds(ids => [...ids, a.id])
+                  else setSelectedAmenityIds(ids => ids.filter(x => x !== a.id))
+                }}
+              />
+              {a.display_name}
+            </label>
+          ))}
+        </div>
+        <button type="button" className="btn-primary w-full mt-4" onClick={() => saveAmenities.mutate()}>
+          Save amenities
+        </button>
+      </Modal>
     </div>
+    </RequirePropertyScope>
   )
 }

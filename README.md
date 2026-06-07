@@ -206,7 +206,7 @@ All credentials are also shown on the **login page** as clickable quick-fill but
 - Swagger UI: `http://localhost:8000/api/docs`
 - ReDoc: `http://localhost:8000/api/redoc`
 - OpenAPI JSON (e.g. Postman **Import → Link**): `http://localhost:8000/openapi.json`
-- Postman: import **`Monitour.postman_collection.json`** from the repository root (includes **Departments**, auth helpers, and variables documented in the collection description). More detail: [docs/API_TOOLS.md](docs/API_TOOLS.md).
+- Postman: import **`Monitour.postman_collection.json`** from the repository root (P0–P2 flows: Catalog, Onboarding, Contacts, F&B, Vendors, Guest Stays, Task SLA, and more). Flow/CRUD checklists: [docs/REQUIREMENTS_FLOW_VERIFICATION.md](docs/REQUIREMENTS_FLOW_VERIFICATION.md), [docs/CRUD_VERIFICATION.md](docs/CRUD_VERIFICATION.md). More detail: [docs/API_TOOLS.md](docs/API_TOOLS.md).
 
 ### Key Endpoints
 
@@ -294,6 +294,18 @@ STORAGE_BACKEND=local          # or "s3"
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 ```
+
+---
+
+## Testing & logs
+
+See [docs/TESTING.md](docs/TESTING.md). Quick run (stack must be up):
+
+```powershell
+powershell -File scripts/run-tests.ps1
+```
+
+Backend logs: `docker compose logs -f backend` (set `LOG_LEVEL=DEBUG` in `docker-compose.yml`).
 
 ---
 

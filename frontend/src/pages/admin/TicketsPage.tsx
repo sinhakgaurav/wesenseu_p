@@ -7,15 +7,15 @@ import { PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
 import { formatDistanceToNow } from 'date-fns'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 const TICKET_TYPES = ['complaint', 'service_request', 'maintenance', 'housekeeping', 'feedback', 'emergency']
 
 export function TicketsPage() {
   const queryClient = useQueryClient()
-  const user = useSelector((state: RootState) => state.auth.user)
+  const { propertyId, enabled } = useAdminPropertyId()
 
   const [filterStatus, setFilterStatus] = useState('')
   const [filterPriority, setFilterPriority] = useState('')
@@ -29,15 +29,16 @@ export function TicketsPage() {
     ticket_type: 'complaint',
     priority: 'medium',
     description: '',
-    property_id: user?.property_id || '',
+    property_id: propertyId,
     created_by_guest: false,
   })
 
   const { data: tickets = [], isLoading } = useQuery<TicketType[]>({
-    queryKey: ['tickets', user?.property_id, filterStatus, filterPriority, filterType],
+    queryKey: ['tickets', propertyId, filterStatus, filterPriority, filterType],
+    enabled,
     queryFn: async () => {
       const params = new URLSearchParams()
-      if (user?.property_id) params.set('property_id', user.property_id)
+      if (propertyId) params.set('property_id', propertyId)
       if (filterStatus) params.set('status', filterStatus)
       if (filterPriority) params.set('priority', filterPriority)
       if (filterType) params.set('ticket_type', filterType)
@@ -93,6 +94,7 @@ export function TicketsPage() {
   if (isLoading) return <PageLoader />
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -292,5 +294,6 @@ export function TicketsPage() {
         </Modal>
       )}
     </div>
+    </RequirePropertyScope>
   )
 }

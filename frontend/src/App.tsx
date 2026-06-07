@@ -24,6 +24,12 @@ import { RoomCategoriesPage } from './pages/admin/RoomCategoriesPage'
 import { PropertyGroupsPage } from './pages/admin/PropertyGroupsPage'
 import { LaundryPage } from './pages/admin/LaundryPage'
 import { GuestStaysPage } from './pages/admin/GuestStaysPage'
+import { OnboardingWizardPage } from './pages/admin/OnboardingWizardPage'
+import { PropertySettingsPage } from './pages/admin/PropertySettingsPage'
+import { FnBPage } from './pages/admin/FnBPage'
+import { TaskSlaPage } from './pages/admin/TaskSlaPage'
+import { PropertiesPage } from './pages/admin/PropertiesPage'
+import { VendorsPage } from './pages/admin/VendorsPage'
 import { GuestPortalPage } from './pages/guest/GuestPortalPage'
 import { LandingPage } from './pages/public/LandingPage'
 import { AboutPage } from './pages/public/AboutPage'
@@ -31,7 +37,11 @@ import { PricingPage } from './pages/public/PricingPage'
 import { ContactPage } from './pages/public/ContactPage'
 import { SupportChatPage } from './pages/public/SupportChatPage'
 import { AdminPanelPage } from './pages/super_admin/AdminPanelPage'
+import { PlatformDashboardPage } from './pages/admin/PlatformDashboardPage'
 import { SupportChatWidget } from './components/SupportChatWidget'
+import { RoleRoute, SuperAdminRoute } from './components/auth/RoleRoute'
+import { canAccessPath } from './lib/rbac'
+import type { UserRole } from './lib/types'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,11 +55,25 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function SuperAdminRoute({ children }: { children: React.ReactNode }) {
+function AdminPageRoute({
+  path,
+  children,
+}: {
+  path: string
+  children: React.ReactNode
+}) {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (user?.role !== 'super_admin') return <Navigate to="/admin/dashboard" replace />
+  if (!canAccessPath(user?.role, path)) return <Navigate to="/admin/dashboard" replace />
   return <>{children}</>
+}
+
+const SETUP_ROLES = ['super_admin', 'property_manager'] as const satisfies readonly UserRole[]
+
+function AdminIndexRedirect() {
+  const user = useSelector((state: RootState) => state.auth.user)
+  if (user?.role === 'super_admin') return <Navigate to="/admin/platform-dashboard" replace />
+  return <Navigate to="/admin/dashboard" replace />
 }
 
 function AppRoutes() {
@@ -74,33 +98,32 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="rooms" element={<RoomsPage />} />
-        <Route path="guests" element={<GuestStaysPage />} />
-        <Route path="tasks" element={<TasksPage />} />
-        <Route path="tickets" element={<TicketsPage />} />
-        <Route path="employees" element={<EmployeesPage />} />
-        <Route path="departments" element={<DepartmentsPage />} />
-        <Route path="inventory" element={<InventoryPage />} />
-        <Route path="laundry" element={<LaundryPage />} />
-        <Route path="orders" element={<OrdersPage />} />
-        <Route path="attendance" element={<AttendancePage />} />
-        <Route path="feedback" element={<FeedbackPage />} />
-        <Route path="surveillance" element={<SurveillancePage />} />
-        <Route path="benchmarks" element={<BenchmarksPage />} />
-        <Route path="room-categories" element={<RoomCategoriesPage />} />
-        <Route path="property-groups" element={<PropertyGroupsPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-        {/* Super-admin panel nested under /admin for authenticated layout */}
-        <Route
-          path="super-admin"
-          element={
-            <SuperAdminRoute>
-              <AdminPanelPage />
-            </SuperAdminRoute>
-          }
-        />
+        <Route index element={<AdminIndexRedirect />} />
+        <Route path="platform-dashboard" element={<SuperAdminRoute><PlatformDashboardPage /></SuperAdminRoute>} />
+        <Route path="dashboard" element={<AdminPageRoute path="/admin/dashboard"><DashboardPage /></AdminPageRoute>} />
+        <Route path="rooms" element={<AdminPageRoute path="/admin/rooms"><RoomsPage /></AdminPageRoute>} />
+        <Route path="guests" element={<AdminPageRoute path="/admin/guests"><GuestStaysPage /></AdminPageRoute>} />
+        <Route path="tasks" element={<AdminPageRoute path="/admin/tasks"><TasksPage /></AdminPageRoute>} />
+        <Route path="tickets" element={<AdminPageRoute path="/admin/tickets"><TicketsPage /></AdminPageRoute>} />
+        <Route path="employees" element={<AdminPageRoute path="/admin/employees"><EmployeesPage /></AdminPageRoute>} />
+        <Route path="departments" element={<AdminPageRoute path="/admin/departments"><DepartmentsPage /></AdminPageRoute>} />
+        <Route path="inventory" element={<AdminPageRoute path="/admin/inventory"><InventoryPage /></AdminPageRoute>} />
+        <Route path="vendors" element={<AdminPageRoute path="/admin/vendors"><VendorsPage /></AdminPageRoute>} />
+        <Route path="laundry" element={<AdminPageRoute path="/admin/laundry"><LaundryPage /></AdminPageRoute>} />
+        <Route path="orders" element={<AdminPageRoute path="/admin/orders"><OrdersPage /></AdminPageRoute>} />
+        <Route path="attendance" element={<AdminPageRoute path="/admin/attendance"><AttendancePage /></AdminPageRoute>} />
+        <Route path="feedback" element={<AdminPageRoute path="/admin/feedback"><FeedbackPage /></AdminPageRoute>} />
+        <Route path="surveillance" element={<AdminPageRoute path="/admin/surveillance"><SurveillancePage /></AdminPageRoute>} />
+        <Route path="benchmarks" element={<AdminPageRoute path="/admin/benchmarks"><BenchmarksPage /></AdminPageRoute>} />
+        <Route path="reports" element={<AdminPageRoute path="/admin/reports"><ReportsPage /></AdminPageRoute>} />
+        <Route path="room-categories" element={<RoleRoute roles={SETUP_ROLES}><RoomCategoriesPage /></RoleRoute>} />
+        <Route path="onboarding" element={<RoleRoute roles={SETUP_ROLES}><OnboardingWizardPage /></RoleRoute>} />
+        <Route path="property-settings" element={<RoleRoute roles={SETUP_ROLES}><PropertySettingsPage /></RoleRoute>} />
+        <Route path="fnb" element={<RoleRoute roles={SETUP_ROLES}><FnBPage /></RoleRoute>} />
+        <Route path="task-sla" element={<RoleRoute roles={SETUP_ROLES}><TaskSlaPage /></RoleRoute>} />
+        <Route path="property-groups" element={<RoleRoute roles={SETUP_ROLES}><PropertyGroupsPage /></RoleRoute>} />
+        <Route path="properties" element={<SuperAdminRoute><PropertiesPage /></SuperAdminRoute>} />
+        <Route path="super-admin" element={<SuperAdminRoute><AdminPanelPage /></SuperAdminRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,39 +1,92 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, ClipboardList, Upload, CheckCircle, AlertTriangle } from 'lucide-react'
 import api from '@/lib/api'
-import type { Task } from '@/lib/types'
+import type { Task, TaskMedia } from '@/lib/types'
 import { PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
 import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
+import { usePropertyScope } from '@/context/PropertyScopeContext'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 import { formatDistanceToNow } from 'date-fns'
 
 export function TasksPage() {
   const queryClient = useQueryClient()
   const user = useSelector((state: RootState) => state.auth.user)
+  const { effectivePropertyId, needsPropertySelection } = usePropertyScope()
+  const propertyId = effectivePropertyId || ''
 
   const [filterStatus, setFilterStatus] = useState('')
   const [filterPriority, setFilterPriority] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [uploadFiles, setUploadFiles] = useState<FileList | null>(null)
+
+  const uploadMediaMutation = useMutation({
+    mutationFn: async ({ taskId, files }: { taskId: string; files: FileList }) => {
+      const fd = new FormData()
+      Array.from(files).forEach(f => fd.append('files', f))
+      return api.post(`/tasks/${taskId}/upload-media`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['task-benchmark-req'] })
+      setUploadFiles(null)
+      toast.success('Media uploaded')
+    },
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
+      toast.error(err.response?.data?.detail || 'Upload failed')
+    },
+  })
+
+  const submitVerificationMutation = useMutation({
+    mutationFn: async ({ taskId, files }: { taskId: string; files: FileList }) => {
+      const fd = new FormData()
+      Array.from(files).forEach(f => fd.append('files', f))
+      return api.post(`/verification/task/${taskId}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      toast.success('Verification queued (WesenseU)')
+    },
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
+      toast.error(err.response?.data?.detail || 'Verification submit failed')
+    },
+  })
+
+  const { data: benchmarkReq } = useQuery<{
+    required_photo_count: number
+    current_photo_count: number
+    aspects: string[]
+    satisfied: boolean
+  }>({
+    queryKey: ['task-benchmark-req', selectedTask?.id],
+    enabled: !!selectedTask?.id && selectedTask.verification_required && selectedTask.task_type === 'cleaning',
+    queryFn: async () => {
+      const { data } = await api.get(`/tasks/${selectedTask!.id}/benchmark-requirements`)
+      return data
+    },
+  })
 
   const [newTask, setNewTask] = useState({
     task_type: 'cleaning',
     service_type: '',
     priority: 'medium',
     description: '',
-    property_id: user?.property_id || '',
+    property_id: propertyId,
     auto_assign: false,
   })
 
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
-    queryKey: ['tasks', user?.property_id, filterStatus, filterPriority],
+    queryKey: ['tasks', propertyId, filterStatus, filterPriority],
+    enabled: !!propertyId,
     queryFn: async () => {
       const params = new URLSearchParams()
-      if (user?.property_id) params.set('property_id', user.property_id)
+      if (propertyId) params.set('property_id', propertyId)
       if (user?.role === 'employee') params.set('assigned_to', user.id)
       if (filterStatus) params.set('status', filterStatus)
       if (filterPriority) params.set('priority', filterPriority)
@@ -62,8 +115,12 @@ export function TasksPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['task-benchmark-req'] })
       setSelectedTask(null)
       toast.success('Status updated')
+    },
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
+      toast.error(err.response?.data?.detail || 'Status update failed')
     },
   })
 
@@ -83,13 +140,14 @@ export function TasksPage() {
   if (isLoading) return <PageLoader />
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
           <h1 className="page-title">Tasks</h1>
           <p className="text-gray-500 text-sm">
-          {tasks.length} total tasks · SLA policies:{' '}
-          <code className="text-xs bg-gray-100 px-1 rounded">/api/v1/task-sla-policies</code>
+          {tasks.length} total tasks ·{' '}
+          <Link to="/admin/task-sla" className="text-blue-600 hover:underline text-xs">Manage SLA policies</Link>
         </p>
         </div>
         {user?.role !== 'employee' && (
@@ -316,6 +374,19 @@ export function TasksPage() {
               </div>
             )}
 
+            {benchmarkReq && benchmarkReq.required_photo_count > 0 && (
+              <div className={`p-3 rounded-lg border text-sm ${benchmarkReq.satisfied ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+                <p className="font-medium text-gray-900">Benchmark photos required</p>
+                <p className="text-gray-600 mt-1">
+                  {benchmarkReq.current_photo_count} / {benchmarkReq.required_photo_count} uploaded
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Aspects: {benchmarkReq.aspects.join(', ')}</p>
+                {!benchmarkReq.satisfied && (
+                  <p className="text-xs text-amber-800 mt-2">Upload more photos before verification or approval.</p>
+                )}
+              </div>
+            )}
+
             {(selectedTask.service_type || selectedTask.sla_due_at || selectedTask.sla_breached_at) && (
               <div className="p-3 bg-amber-50/80 border border-amber-100 rounded-lg text-sm space-y-1">
                 <p className="text-xs font-semibold text-amber-900">SLA / RCA</p>
@@ -343,7 +414,7 @@ export function TasksPage() {
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-2">Media ({selectedTask.media.length})</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {selectedTask.media.map((m) => (
+                  {selectedTask.media.map((m: TaskMedia) => (
                     <div key={m.id} className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center">
                       {m.media_type === 'photo' ? (
                         <img src={m.media_url} alt="task media" className="w-full h-full object-cover rounded-lg" />
@@ -382,9 +453,40 @@ export function TasksPage() {
                 Start Task
               </button>
             )}
+
+            {['in_progress', 'assigned'].includes(selectedTask.status) && (
+              <div className="space-y-2 border-t pt-4">
+                <label className="block text-sm font-medium text-gray-700">Upload task photos</label>
+                <input type="file" accept="image/*,video/*" multiple onChange={e => setUploadFiles(e.target.files)} />
+                {uploadFiles && uploadFiles.length > 0 && (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="btn-secondary flex-1 flex items-center justify-center gap-2"
+                      disabled={uploadMediaMutation.isPending}
+                      onClick={() => uploadMediaMutation.mutate({ taskId: selectedTask.id, files: uploadFiles })}
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload media
+                    </button>
+                    {selectedTask.verification_required && (
+                      <button
+                        type="button"
+                        className="btn-primary flex-1"
+                        disabled={submitVerificationMutation.isPending}
+                        onClick={() => submitVerificationMutation.mutate({ taskId: selectedTask.id, files: uploadFiles })}
+                      >
+                        Submit to WesenseU
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </Modal>
       )}
     </div>
+    </RequirePropertyScope>
   )
 }

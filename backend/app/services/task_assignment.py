@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.employee import Employee
 from app.models.task import Task
+from app.services.employee_availability import is_employee_unavailable_today
 
 BUSY_STATUSES = ("assigned", "in_progress", "verification_pending")
 
@@ -27,6 +28,7 @@ async def pick_longest_idle_free_employee(
     q = select(Employee).where(
         Employee.property_id == property_id,
         Employee.status == "active",
+        Employee.is_available == True,
         Employee.role == "employee",
     )
     if department_id:
@@ -40,6 +42,9 @@ async def pick_longest_idle_free_employee(
     now = datetime.utcnow()
 
     for emp in emps:
+        if await is_employee_unavailable_today(db, emp, now):
+            continue
+
         busy = (
             await db.execute(
                 select(func.count())

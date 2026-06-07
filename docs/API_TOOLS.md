@@ -13,6 +13,13 @@ Use these when exercising or documenting the HTTP surface without the SPA.
 
 After importing the collection, set **`baseUrl`** to `http://localhost:8000`. Login requests set **`accessToken`**. For **Departments**, super admin must set **`propertyId`** (UUID); **List Departments** can populate **`departmentId`** from the first row of the response.
 
+**P0–P2 flow folders (2026-05-20):** Catalog, Onboarding, Contacts, F&B, Vendors, Guest Stays, Task SLA, Room Categories, Property Schedules, Department Duties, Rooms Bulk, plus extended Tasks / Inventory / Attendance / Reports. Re-run `python backend/scripts/patch_postman_p2.py` if you need to merge folders into an older export.
+
+| Doc | Purpose |
+|-----|---------|
+| [CRUD_VERIFICATION.md](./CRUD_VERIFICATION.md) | Entity CRUD matrix |
+| [REQUIREMENTS_FLOW_VERIFICATION.md](./REQUIREMENTS_FLOW_VERIFICATION.md) | Product flow checklist |
+
 Dev seed passwords are aligned with **`backend/app/db/init_db.py`** (see root `README.md`).
 
 ## WesenseU

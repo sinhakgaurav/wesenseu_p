@@ -1,5 +1,7 @@
 import uuid
 from datetime import datetime
+from typing import Optional
+
 from sqlalchemy import String, Boolean, DateTime, ForeignKey, Text, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,6 +15,9 @@ class Ticket(Base):
     ticket_number: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     property_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("properties.id"), nullable=False)
     room_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("rooms.id"), nullable=True)
+    guest_stay_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("guest_stays.id", ondelete="SET NULL"), nullable=True
+    )
     department_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id"), nullable=True)
     assigned_to: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True)
     ticket_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -32,11 +37,14 @@ class Ticket(Base):
     escalation_count: Mapped[int] = mapped_column(Integer, default=0)
     reported_by_name: Mapped[str] = mapped_column(String(200), nullable=True)
     rating: Mapped[int] = mapped_column(Integer, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     property: Mapped["Property"] = relationship("Property", back_populates="tickets")
     room: Mapped["Room"] = relationship("Room", back_populates="tickets")
+    guest_stay: Mapped[Optional["GuestStay"]] = relationship("GuestStay", back_populates="tickets")
     department: Mapped["Department"] = relationship("Department", back_populates="tickets")
     tasks: Mapped[list["Task"]] = relationship("Task", back_populates="ticket")
     comments: Mapped[list["TicketComment"]] = relationship("TicketComment", back_populates="ticket", cascade="all, delete-orphan")

@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { Star, TrendingUp, ThumbsUp, ThumbsDown, Minus } from 'lucide-react'
 import api from '@/lib/api'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
 import { formatDistanceToNow } from 'date-fns'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 interface Feedback {
   id: string
@@ -27,22 +27,22 @@ interface FeedbackSummary {
 }
 
 export function FeedbackPage() {
-  const user = useSelector((state: RootState) => state.auth.user)
+  const { propertyId, enabled } = useAdminPropertyId()
 
   const { data: feedbacks = [], isLoading } = useQuery<Feedback[]>({
-    queryKey: ['feedback', user?.property_id],
+    queryKey: ['feedback', propertyId],
+    enabled,
     queryFn: async () => {
-      const params = user?.property_id ? `?property_id=${user.property_id}&limit=50` : '?limit=50'
-      const { data } = await api.get(`/feedback${params}`)
+      const { data } = await api.get(`/feedback?property_id=${propertyId}&limit=50`)
       return data
     },
   })
 
   const { data: summary } = useQuery<FeedbackSummary>({
-    queryKey: ['feedback-summary', user?.property_id],
+    queryKey: ['feedback-summary', propertyId],
+    enabled,
     queryFn: async () => {
-      const params = user?.property_id ? `?property_id=${user.property_id}` : ''
-      const { data } = await api.get(`/feedback/summary${params}`)
+      const { data } = await api.get(`/feedback/summary?property_id=${propertyId}`)
       return data
     },
   })
@@ -56,6 +56,7 @@ export function FeedbackPage() {
   }
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -126,5 +127,6 @@ export function FeedbackPage() {
         )}
       </div>
     </div>
+    </RequirePropertyScope>
   )
 }

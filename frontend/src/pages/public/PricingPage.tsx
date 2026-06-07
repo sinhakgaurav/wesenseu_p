@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { PublicNav } from '@/components/layout/PublicNav'
+import { useCmsPage } from '@/hooks/useCmsPage'
+import { CmsPageHero } from '@/components/public/CmsPageHero'
 
 // ── Currency configuration ────────────────────────────────────────────────────
 
@@ -136,6 +138,7 @@ function CurrencySelector({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function PricingPage() {
+  const { data: cmsPage } = useCmsPage('pricing')
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly')
   const [currencyCode, setCurrencyCode] = useState('INR')
 
@@ -164,20 +167,18 @@ export function PricingPage() {
     <div className="min-h-screen bg-white">
       <PublicNav />
 
-      {/* Hero */}
       <section className="pt-16 pb-10 bg-gradient-to-b from-blue-50/60 to-white">
+        <CmsPageHero
+          page={cmsPage}
+          fallbackTitle="Simple, Transparent Pricing"
+          fallbackSubtitle="Choose the plan that fits your property. Scale as you grow."
+          className="pt-0 pb-6 bg-transparent"
+        />
         <div className="max-w-3xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-5">
             <Zap className="w-3.5 h-3.5" /> 14-day free trial · No credit card required
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight mb-4">
-            Simple, Transparent Pricing
-          </h1>
-          <p className="text-lg text-gray-500 mb-8">
-            Choose the plan that fits your property. Scale as you grow.
-          </p>
 
-          {/* Controls row */}
           <div className="flex items-center justify-center gap-4 flex-wrap">
             {/* Billing toggle */}
             <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-1">

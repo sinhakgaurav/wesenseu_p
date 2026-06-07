@@ -1,27 +1,28 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Users, Search, Phone, Mail } from 'lucide-react'
+import { Plus, Users, Search, Phone, Mail, Upload } from 'lucide-react'
 import api from '@/lib/api'
 import type { Employee } from '@/lib/types'
 import { Badge, StatusBadge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 const ROLES = ['property_manager', 'dept_manager', 'employee']
 const SHIFTS = ['morning', 'afternoon', 'night', 'rotational']
 
 export function EmployeesPage() {
   const queryClient = useQueryClient()
-  const user = useSelector((state: RootState) => state.auth.user)
+  const { propertyId, enabled } = useAdminPropertyId()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filterRole, setFilterRole] = useState('')
   const [filterStatus, setFilterStatus] = useState('active')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
+  const [importErrors, setImportErrors] = useState<string[]>([])
 
   const [newEmployee, setNewEmployee] = useState({
     full_name: '',
@@ -31,14 +32,15 @@ export function EmployeesPage() {
     shift_type: 'morning',
     salary: '',
     password: 'Password@123',
-    property_id: user?.property_id || '',
+    property_id: propertyId,
   })
 
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
-    queryKey: ['employees', user?.property_id, filterRole, filterStatus],
+    queryKey: ['employees', propertyId, filterRole, filterStatus],
+    enabled,
     queryFn: async () => {
       const params = new URLSearchParams()
-      if (user?.property_id) params.set('property_id', user.property_id)
+      if (propertyId) params.set('property_id', propertyId)
       if (filterRole) params.set('role', filterRole)
       if (filterStatus) params.set('status', filterStatus)
       params.set('limit', '100')
@@ -61,6 +63,24 @@ export function EmployeesPage() {
       const error = err as { response?: { data?: { detail?: string } } }
       toast.error(error.response?.data?.detail || 'Failed to create employee')
     },
+  })
+
+  const importMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      const params = propertyId ? `?property_id=${propertyId}` : ''
+      const { data } = await api.post(`/employees/import${params}`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      return data as { created: number; updated: number; errors: string[] }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] })
+      setImportErrors(data.errors || [])
+      toast.success(`Import done: ${data.created} created, ${data.updated} updated`)
+    },
+    onError: () => toast.error('Import failed'),
   })
 
   const updateMutation = useMutation({
@@ -88,17 +108,49 @@ export function EmployeesPage() {
   if (isLoading) return <PageLoader />
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
           <h1 className="page-title">Employees</h1>
           <p className="text-gray-500 text-sm">{employees.length} team members</p>
         </div>
-        <button onClick={() => setShowCreateModal(true)} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Add Employee
-        </button>
+        <div className="flex gap-2">
+          <label className="btn-secondary flex items-center gap-2 cursor-pointer">
+            <Upload className="w-4 h-4" />
+            Import CSV
+            <input
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) importMutation.mutate(f)
+                e.target.value = ''
+              }}
+            />
+          </label>
+          <button onClick={() => setShowCreateModal(true)} className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Add Employee
+          </button>
+        </div>
       </div>
+
+      {importErrors.length > 0 && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900 max-h-32 overflow-y-auto">
+          <p className="font-medium mb-1">Import warnings</p>
+          <ul className="list-disc pl-4 space-y-0.5">
+            {importErrors.map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <p className="text-xs text-gray-500 mb-4">
+        CSV columns: <code>full_name</code>, <code>email</code>, <code>department_name</code>, <code>role</code>, <code>password</code> (optional)
+      </p>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
@@ -287,5 +339,6 @@ export function EmployeesPage() {
         </Modal>
       )}
     </div>
+    </RequirePropertyScope>
   )
 }

@@ -3,8 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Image, Upload, Trash2, Plus } from 'lucide-react'
 import api from '@/lib/api'
 import toast from 'react-hot-toast'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 type BenchmarkRow = {
   id: string
@@ -46,8 +46,7 @@ function parseBenchmarkCategoriesResponse(data: unknown): CategoryRow[] {
 }
 
 export function BenchmarksPage() {
-  const user = useSelector((state: RootState) => state.auth.user)
-  const propertyId = user?.property_id
+  const { propertyId, enabled } = useAdminPropertyId()
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
   const [selectedKey, setSelectedKey] = useState('')
@@ -84,7 +83,7 @@ export function BenchmarksPage() {
 
   const { data: benchmarks = [] } = useQuery<BenchmarkRow[]>({
     queryKey: ['benchmarks', propertyId, selectedKey],
-    enabled: !!propertyId && !!selectedKey,
+    enabled: enabled && !!selectedKey,
     queryFn: async () => {
       const params = new URLSearchParams()
       if (propertyId) params.set('property_id', propertyId)
@@ -135,6 +134,7 @@ export function BenchmarksPage() {
   }
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -281,5 +281,6 @@ export function BenchmarksPage() {
         </div>
       </div>
     </div>
+    </RequirePropertyScope>
   )
 }

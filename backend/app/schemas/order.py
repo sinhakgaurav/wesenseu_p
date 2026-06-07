@@ -44,6 +44,7 @@ class OrderResponse(BaseModel):
     order_number: str
     property_id: uuid.UUID
     room_id: uuid.UUID
+    guest_stay_id: Optional[uuid.UUID] = None
     order_type: str
     total_amount: Decimal
     status: str

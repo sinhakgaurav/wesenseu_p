@@ -13,6 +13,16 @@ class Room(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     property_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("properties.id"), nullable=False)
+    property_room_category_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("property_room_categories.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    room_view_catalog_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("catalog_items.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     room_number: Mapped[str] = mapped_column(String(20), nullable=False)
     room_category: Mapped[str] = mapped_column(String(50), nullable=False)  # Deluxe, Standard, Suite, ICU, VIP, etc.
     floor_number: Mapped[int] = mapped_column(Integer, nullable=True)
@@ -33,7 +43,8 @@ class Room(Base):
 
     property: Mapped["Property"] = relationship("Property", back_populates="rooms")
     room_category_definition: Mapped[Optional["PropertyRoomCategory"]] = relationship(
-        "PropertyRoomCategory", foreign_keys="Room.property_room_category_id"
+        "PropertyRoomCategory",
+        foreign_keys=[property_room_category_id],
     )
     tasks: Mapped[list["Task"]] = relationship("Task", back_populates="room")
     tickets: Mapped[list["Ticket"]] = relationship("Ticket", back_populates="room")
@@ -41,6 +52,7 @@ class Room(Base):
     feedback: Mapped[list["Feedback"]] = relationship("Feedback", back_populates="room")
     audit_logs: Mapped[list["RoomAuditLog"]] = relationship("RoomAuditLog", back_populates="room")
     laundry_orders: Mapped[list["LaundryOrder"]] = relationship("LaundryOrder", back_populates="room")
+    guest_stays: Mapped[list["GuestStay"]] = relationship("GuestStay", back_populates="room")
 
 
 class RoomAuditLog(Base):

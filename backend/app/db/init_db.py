@@ -1,5 +1,8 @@
 """Seed initial data for Monitour."""
 import asyncio
+import os
+import subprocess
+import sys
 import uuid
 from datetime import datetime, date
 from urllib.parse import quote
@@ -18,6 +21,7 @@ from app.models.department import Department
 from app.models.room import Room
 from app.models.inventory import InventoryItem
 from app.models.plan import Plan
+from app.models.page import Page
 from app.models.task_sla import TaskSlaPolicy
 from app.core.security import get_password_hash
 
@@ -98,6 +102,20 @@ async def create_tables():
         await conn.run_sync(Base.metadata.create_all)
 
 
+def _run_alembic_upgrade() -> None:
+    """Apply additive migrations after create_all (idempotent migrations; no-op when already aligned)."""
+    backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    print("Running database migrations (alembic upgrade head)...")
+    r = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        cwd=backend_root,
+        env=os.environ.copy(),
+    )
+    if r.returncode != 0:
+        raise SystemExit(f"alembic upgrade head failed with exit code {r.returncode}")
+    print("  [OK] Alembic upgrade head completed.")
+
+
 async def seed_plans(db: AsyncSession) -> int:
     """Insert default plans if they don't exist yet. Returns count created."""
     created = 0
@@ -118,6 +136,45 @@ async def auto_seed_plans():
     """Called on every startup — idempotent plan seeding."""
     async with AsyncSessionLocal() as db:
         await seed_plans(db)
+
+
+async def ensure_cms_pages() -> int:
+    """Idempotent CMS pages for public site and diagnostics (about, contact, pricing)."""
+    cms_pages = [
+        ("about", "About Monitour", "about", "About Monitour", "Hospitality operations platform"),
+        ("contact", "Contact Us", "contact", "Get in touch", "We respond within 24 hours"),
+        ("pricing", "Pricing", "pricing", "Plans & pricing", "Choose the right plan"),
+    ]
+    created = 0
+    async with AsyncSessionLocal() as db:
+        for slug, title, ptype, hero, sub in cms_pages:
+            exists = (await db.execute(select(Page.id).where(Page.slug == slug))).scalar_one_or_none()
+            if exists:
+                continue
+            db.add(
+                Page(
+                    slug=slug,
+                    title=title,
+                    page_type=ptype,
+                    hero_heading=hero,
+                    hero_subheading=sub,
+                    content_blocks=[
+                        {
+                            "type": "html",
+                            "data": {
+                                "body": f"<p>Demo content for <strong>{title}</strong>. Edit in Super Admin → CMS.</p>",
+                            },
+                        }
+                    ],
+                    is_published=True,
+                    published_at=datetime.utcnow(),
+                )
+            )
+            created += 1
+        if created:
+            await db.commit()
+            print(f"  [OK] Seeded {created} CMS page(s).")
+    return created
 
 
 async def ensure_demo_users():
@@ -501,17 +558,49 @@ async def seed_data():
         # Always seed plans (idempotent)
         await seed_plans(db)
 
+        from app.db.seed_task_inventory_rules import seed_task_inventory_rules
+
+        n_rules = await seed_task_inventory_rules(db)
+        if n_rules:
+            print(f"  [OK] Seeded {n_rules} task inventory rule(s).")
+
 
 async def main():
     await create_tables()
+    _run_alembic_upgrade()
+    from app.db.seed_catalog import seed_catalog_items
+
+    async with AsyncSessionLocal() as db:
+        n = await seed_catalog_items(db)
+        if n:
+            print(f"  [OK] Seeded {n} catalog item(s).")
     await seed_data()
     await ensure_demo_users()
     from app.db.seed_comprehensive import run_comprehensive_seed
 
     await run_comprehensive_seed()
+    from app.db.seed_p2_sample import seed_p2_sample
+
+    async with AsyncSessionLocal() as db:
+        n_p2 = await seed_p2_sample(db)
+        if n_p2:
+            print(f"  [OK] Seeded {n_p2} P2 sample row(s).")
+
+    from app.db.seed_all_demo import seed_all_demo
+
+    n_demo = await seed_all_demo()
+    if n_demo:
+        print(f"  [OK] All-demo seed: {n_demo} action(s).")
+    from app.db.seed_task_inventory_rules import seed_task_inventory_rules
+
+    async with AsyncSessionLocal() as db:
+        n_rules = await seed_task_inventory_rules(db)
+        if n_rules:
+            print(f"  [OK] Seeded {n_rules} task inventory rule(s).")
     # Ensure plans exist even if seed_data was skipped (already seeded)
     async with AsyncSessionLocal() as db:
         await seed_plans(db)
+    await ensure_cms_pages()
 
 
 if __name__ == "__main__":

@@ -12,27 +12,37 @@ import api from '@/lib/api'
 import type { DashboardStats } from '@/lib/types'
 import { StatCard } from '@/components/ui/StatCard'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
+import { usePropertyScope } from '@/context/PropertyScopeContext'
+import { Link } from 'react-router-dom'
 
 const ROOM_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#f97316', '#ef4444', '#a855f7', '#6b7280']
 
 export function DashboardPage() {
-  const user = useSelector((state: RootState) => state.auth.user)
+  const { effectivePropertyId, needsPropertySelection, selectedProperty } = usePropertyScope()
 
   const { data: stats, isLoading } = useQuery<DashboardStats>({
-    queryKey: ['dashboard', user?.property_id],
+    queryKey: ['dashboard', effectivePropertyId],
     queryFn: async () => {
-      const params = user?.property_id ? `?property_id=${user.property_id}` : ''
+      const params = effectivePropertyId ? `?property_id=${effectivePropertyId}` : ''
       const { data } = await api.get(`/dashboard/stats${params}`)
       return data
     },
+    enabled: !!effectivePropertyId,
     refetchInterval: 30000,
   })
 
+  if (needsPropertySelection) {
+    return (
+      <div className="card text-center py-12">
+        <p className="text-gray-600 mb-2">Select a property in the sidebar to view the property dashboard.</p>
+        <Link to="/admin/platform-dashboard" className="text-blue-600 text-sm hover:underline">Or open Platform Dashboard →</Link>
+      </div>
+    )
+  }
+
   if (isLoading) return <PageLoader />
 
-  const taskChartData = stats ? [
+  const taskChartData = stats && stats.total_rooms >= 0 ? [
     { name: 'Active', value: stats.active_tasks, color: '#3b82f6' },
     { name: 'Pending', value: stats.pending_tasks, color: '#f59e0b' },
     { name: 'Completed Today', value: stats.completed_tasks_today, color: '#22c55e' },

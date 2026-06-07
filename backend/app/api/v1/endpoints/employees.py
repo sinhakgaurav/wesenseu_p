@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List, Optional
@@ -6,8 +6,10 @@ import uuid
 
 from app.db.base import get_db
 from app.models.employee import Employee
+from app.models.department import Department
 from app.core.security import get_password_hash
 from app.schemas.employee import EmployeeCreate, EmployeeUpdate, EmployeeResponse
+from app.schemas.p2 import ImportResult
 from app.api.v1.deps import get_current_user
 
 router = APIRouter()
@@ -134,3 +136,70 @@ async def get_available_employees(
 
     result = await db.execute(query)
     return result.scalars().all()
+
+
+@router.post("/import", response_model=ImportResult)
+async def import_employees_csv(
+    file: UploadFile = File(...),
+    property_id: Optional[uuid.UUID] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role not in ("super_admin", "property_manager"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    import csv
+    import io
+
+    prop_id = property_id or current_user.property_id
+    if not prop_id:
+        raise HTTPException(status_code=400, detail="property_id required")
+    content = (await file.read()).decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(content))
+    created = updated = 0
+    errors: list[str] = []
+    for i, row in enumerate(reader, start=2):
+        email = (row.get("email") or "").strip().lower()
+        full_name = (row.get("full_name") or row.get("name") or "").strip()
+        if not email or not full_name:
+            errors.append(f"Row {i}: missing email or full_name")
+            continue
+        dept_id = None
+        dept_name = (row.get("department_name") or row.get("department") or "").strip()
+        if dept_name:
+            dept = (
+                await db.execute(
+                    select(Department).where(
+                        Department.property_id == prop_id,
+                        Department.name == dept_name,
+                        Department.is_active == True,
+                    )
+                )
+            ).scalar_one_or_none()
+            if dept:
+                dept_id = dept.id
+        existing = (await db.execute(select(Employee).where(Employee.email == email))).scalar_one_or_none()
+        password = (row.get("password") or "ChangeMe@123").strip()
+        role = (row.get("role") or "employee").strip()
+        if existing:
+            existing.full_name = full_name
+            existing.department_id = dept_id or existing.department_id
+            existing.role = role
+            updated += 1
+        else:
+            db.add(
+                Employee(
+                    property_id=prop_id,
+                    department_id=dept_id,
+                    employee_code=generate_employee_code(),
+                    full_name=full_name,
+                    email=email,
+                    phone=(row.get("phone") or "").strip() or None,
+                    role=role,
+                    shift_type=(row.get("shift_type") or "").strip() or None,
+                    hashed_password=get_password_hash(password),
+                    status="active",
+                )
+            )
+            created += 1
+    await db.commit()
+    return ImportResult(created=created, updated=updated, errors=errors)

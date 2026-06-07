@@ -1,24 +1,115 @@
 {
   "info": {
     "name": "Monitour API",
-    "description": "Complete API collection for Monitour – Smart Operations, Surveillance & Workforce Management Platform.\n\n## Quick Start\n1. Set the `baseUrl` variable to `http://localhost:8000` (or your deployed API origin).\n2. Run **Login (Admin)** or **Login (Manager)** – the `accessToken` variable is set automatically.\n3. Authenticated requests use the collection Bearer token.\n\n## OpenAPI (keep in sync)\nIn Postman: **Import → Link** → `{{baseUrl}}/openapi.json` to merge the latest paths from the running server.\n\n## WesenseU & verification\nRoom verification (`POST /verification/task/{task_id}`) queues **Celery**; the worker downloads stored image URLs and POSTs **multipart** to WesenseU with optional **`benchmark_image_url`** and **`room_category`**. Run **WesenseU** on port **8001** and a **Celery worker** for end-to-end AI callbacks.\n\n## Credentials (dev seed)\n| Role | Email | Password |\n|------|-------|----------|\n| Super Admin | admin@monitour.in | Admin@2026 |\n| Property Manager | manager@grandpalace.com | Manager@123 |\n| Dept Manager | hk_head@grandpalace.com | DeptHead@123 |\n| Employee | priya@grandpalace.com | Password@123 |",
+    "description": "Complete API collection for Monitour – Smart Operations, Surveillance & Workforce Management Platform.\n\n## Quick Start\n1. Set the `baseUrl` variable to `http://localhost:8000` (or your deployed API origin).\n2. Run **Login (Admin)** or **Login (Manager)** – the `accessToken` variable is set automatically.\n3. Authenticated requests use the collection Bearer token.\n\n## OpenAPI (keep in sync)\nIn Postman: **Import → Link** → `{{baseUrl}}/openapi.json` to merge the latest paths from the running server.\n\n## WesenseU & verification\nRoom verification (`POST /verification/task/{task_id}`) queues **Celery**; the worker downloads stored image URLs and POSTs **multipart** to WesenseU with optional **`benchmark_image_url`** and **`room_category`**. Run **WesenseU** on port **8001** and a **Celery worker** for end-to-end AI callbacks.\n\n## Credentials (dev seed)\n| Role | Email | Password |\n|------|-------|----------|\n| Super Admin | admin@monitour.in | Admin@2026 |\n| Property Manager | manager@grandpalace.com | Manager@123 |\n| Dept Manager | hk_head@grandpalace.com | DeptHead@123 |\n| Employee | priya@grandpalace.com | Password@123 |\n\n## P0–P2 flows (2026-05-20)\nFolders: Catalog, Onboarding, Contacts, F&B, Vendors, Guest Stays, Task SLA, Room Categories, Property Schedules, Department Duties, Rooms Bulk, extended Tasks/Inventory/Attendance/Reports.\nSee `docs/CRUD_VERIFICATION.md` and `docs/REQUIREMENTS_FLOW_VERIFICATION.md`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl",     "value": "http://localhost:8000", "type": "string" },
-    { "key": "apiBase",     "value": "{{baseUrl}}/api/v1",    "type": "string" },
-    { "key": "accessToken", "value": "",                       "type": "string" },
-    { "key": "propertyId",  "value": "",                       "type": "string" },
-    { "key": "employeeId",  "value": "",                       "type": "string" },
-    { "key": "roomId",      "value": "",                       "type": "string" },
-    { "key": "taskId",      "value": "",                       "type": "string" },
-    { "key": "ticketId",    "value": "",                       "type": "string" },
-    { "key": "itemId",      "value": "",                       "type": "string" },
-    { "key": "departmentId", "value": "",                    "type": "string" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "apiBase",
+      "value": "{{baseUrl}}/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "propertyId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "roomId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ticketId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "itemId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "departmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "outletId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "vendorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sessionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "guestStayId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contactId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "catalogItemId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "menuItemId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "slaPolicyId",
+      "value": "",
+      "type": "string"
+    }
   ],
   "auth": {
     "type": "bearer",
-    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
   },
   "item": [
     {
@@ -44,14 +135,30 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"admin@monitour.in\",\n  \"password\": \"Admin@2026\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/auth/login", "host": ["{{apiBase}}"], "path": ["auth", "login"] }
+            "url": {
+              "raw": "{{apiBase}}/auth/login",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
           }
         },
         {
@@ -74,14 +181,30 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"manager@grandpalace.com\",\n  \"password\": \"Manager@123\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/auth/login", "host": ["{{apiBase}}"], "path": ["auth", "login"] }
+            "url": {
+              "raw": "{{apiBase}}/auth/login",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
           }
         },
         {
@@ -102,34 +225,75 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"priya@grandpalace.com\",\n  \"password\": \"Password@123\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/auth/login", "host": ["{{apiBase}}"], "path": ["auth", "login"] }
+            "url": {
+              "raw": "{{apiBase}}/auth/login",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
           }
         },
         {
           "name": "Refresh Token",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"refresh_token\": \"<paste_refresh_token_here>\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/auth/refresh-token", "host": ["{{apiBase}}"], "path": ["auth", "refresh-token"] }
+            "url": {
+              "raw": "{{apiBase}}/auth/refresh-token",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "auth",
+                "refresh-token"
+              ]
+            }
           }
         },
         {
           "name": "Logout",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{apiBase}}/auth/logout", "host": ["{{apiBase}}"], "path": ["auth", "logout"] }
+            "url": {
+              "raw": "{{apiBase}}/auth/logout",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
           }
         }
       ]
@@ -161,11 +325,21 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/properties?skip=0&limit=50",
-              "host": ["{{apiBase}}"],
-              "path": ["properties"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "properties"
+              ],
               "query": [
-                { "key": "skip", "value": "0" },
-                { "key": "limit", "value": "50" }
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
               ]
             }
           }
@@ -174,31 +348,67 @@
           "name": "Get Property",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{apiBase}}/properties/{{propertyId}}", "host": ["{{apiBase}}"], "path": ["properties", "{{propertyId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/properties/{{propertyId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}"
+              ]
+            }
           }
         },
         {
           "name": "Create Property",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Sunset Resort\",\n  \"property_type\": \"resort\",\n  \"address\": \"45 Beach Road, Goa\",\n  \"city\": \"Goa\",\n  \"state\": \"Goa\",\n  \"country\": \"India\",\n  \"phone\": \"+91-8320001122\",\n  \"email\": \"info@sunsetresort.com\",\n  \"total_rooms\": 80,\n  \"star_rating\": 4\n}"
             },
-            "url": { "raw": "{{apiBase}}/properties", "host": ["{{apiBase}}"], "path": ["properties"] }
+            "url": {
+              "raw": "{{apiBase}}/properties",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "properties"
+              ]
+            }
           }
         },
         {
           "name": "Update Property",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone\": \"+91-8320009900\",\n  \"star_rating\": 5\n}"
             },
-            "url": { "raw": "{{apiBase}}/properties/{{propertyId}}", "host": ["{{apiBase}}"], "path": ["properties", "{{propertyId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/properties/{{propertyId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}"
+              ]
+            }
           }
         }
       ]
@@ -227,14 +437,36 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/employees?skip=0&limit=50",
-              "host": ["{{apiBase}}"],
-              "path": ["employees"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "employees"
+              ],
               "query": [
-                { "key": "skip", "value": "0" },
-                { "key": "limit", "value": "50" },
-                { "key": "status", "value": "active", "disabled": true },
-                { "key": "role", "value": "employee", "disabled": true },
-                { "key": "department_id", "value": "", "disabled": true }
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": "employee",
+                  "disabled": true
+                },
+                {
+                  "key": "department_id",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -243,7 +475,16 @@
           "name": "Get Employee",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{apiBase}}/employees/{{employeeId}}", "host": ["{{apiBase}}"], "path": ["employees", "{{employeeId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/employees/{{employeeId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}"
+              ]
+            }
           }
         },
         {
@@ -265,31 +506,67 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"full_name\": \"Rahul Verma\",\n  \"email\": \"rahul.verma@grandpalace.com\",\n  \"phone\": \"+91-9988776655\",\n  \"role\": \"employee\",\n  \"shift_type\": \"morning\",\n  \"joining_date\": \"2026-05-13\",\n  \"salary\": 25000,\n  \"password\": \"Password@123\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/employees", "host": ["{{apiBase}}"], "path": ["employees"] }
+            "url": {
+              "raw": "{{apiBase}}/employees",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            }
           }
         },
         {
           "name": "Update Employee",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"shift_type\": \"evening\",\n  \"salary\": 28000,\n  \"is_available\": true\n}"
             },
-            "url": { "raw": "{{apiBase}}/employees/{{employeeId}}", "host": ["{{apiBase}}"], "path": ["employees", "{{employeeId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/employees/{{employeeId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}"
+              ]
+            }
           }
         },
         {
           "name": "Deactivate Employee",
           "request": {
             "method": "DELETE",
-            "url": { "raw": "{{apiBase}}/employees/{{employeeId}}", "host": ["{{apiBase}}"], "path": ["employees", "{{employeeId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/employees/{{employeeId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}"
+              ]
+            }
           }
         },
         {
@@ -298,10 +575,20 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/employees/available/list",
-              "host": ["{{apiBase}}"],
-              "path": ["employees", "available", "list"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "employees",
+                "available",
+                "list"
+              ],
               "query": [
-                { "key": "property_id", "value": "{{propertyId}}", "disabled": true }
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -334,11 +621,22 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/departments?property_id={{propertyId}}&include_inactive=false",
-              "host": ["{{apiBase}}"],
-              "path": ["departments"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "departments"
+              ],
               "query": [
-                { "key": "property_id", "value": "{{propertyId}}", "description": "Required when logged in as super_admin" },
-                { "key": "include_inactive", "value": "false" }
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}",
+                  "description": "Required when logged in as super_admin"
+                },
+                {
+                  "key": "include_inactive",
+                  "value": "false"
+                }
               ]
             },
             "description": "Property-scoped users omit `property_id` (backend uses their property). Super admin must pass `property_id`."
@@ -348,7 +646,16 @@
           "name": "Get Department",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{apiBase}}/departments/{{departmentId}}", "host": ["{{apiBase}}"], "path": ["departments", "{{departmentId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/departments/{{departmentId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "departments",
+                "{{departmentId}}"
+              ]
+            }
           }
         },
         {
@@ -369,12 +676,25 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"name\": \"Housekeeping\",\n  \"description\": \"Rooms and public areas\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/departments", "host": ["{{apiBase}}"], "path": ["departments"] },
+            "url": {
+              "raw": "{{apiBase}}/departments",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "departments"
+              ]
+            },
             "description": "Requires `property_manager` or `super_admin`."
           }
         },
@@ -382,19 +702,42 @@
           "name": "Update Department",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Housekeeping Ops\",\n  \"description\": \"Updated description\",\n  \"is_active\": true\n}"
             },
-            "url": { "raw": "{{apiBase}}/departments/{{departmentId}}", "host": ["{{apiBase}}"], "path": ["departments", "{{departmentId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/departments/{{departmentId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "departments",
+                "{{departmentId}}"
+              ]
+            }
           }
         },
         {
           "name": "Deactivate Department",
           "request": {
             "method": "DELETE",
-            "url": { "raw": "{{apiBase}}/departments/{{departmentId}}", "host": ["{{apiBase}}"], "path": ["departments", "{{departmentId}}"] },
+            "url": {
+              "raw": "{{apiBase}}/departments/{{departmentId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "departments",
+                "{{departmentId}}"
+              ]
+            },
             "description": "Soft-deactivates (`is_active=false`)."
           }
         }
@@ -424,14 +767,36 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/rooms?skip=0&limit=100",
-              "host": ["{{apiBase}}"],
-              "path": ["rooms"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms"
+              ],
               "query": [
-                { "key": "skip", "value": "0" },
-                { "key": "limit", "value": "100" },
-                { "key": "room_status", "value": "vacant", "disabled": true },
-                { "key": "room_category", "value": "standard", "disabled": true },
-                { "key": "floor_number", "value": "1", "disabled": true }
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "room_status",
+                  "value": "vacant",
+                  "disabled": true
+                },
+                {
+                  "key": "room_category",
+                  "value": "standard",
+                  "disabled": true
+                },
+                {
+                  "key": "floor_number",
+                  "value": "1",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -440,15 +805,36 @@
           "name": "Get Room",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{apiBase}}/rooms/{{roomId}}", "host": ["{{apiBase}}"], "path": ["rooms", "{{roomId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/rooms/{{roomId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms",
+                "{{roomId}}"
+              ]
+            }
           }
         },
         {
           "name": "Get Room by QR (Public)",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
-            "url": { "raw": "{{apiBase}}/rooms/{{roomId}}/by-qr", "host": ["{{apiBase}}"], "path": ["rooms", "{{roomId}}", "by-qr"] }
+            "url": {
+              "raw": "{{apiBase}}/rooms/{{roomId}}/by-qr",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms",
+                "{{roomId}}",
+                "by-qr"
+              ]
+            }
           }
         },
         {
@@ -470,36 +856,78 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"room_number\": \"301\",\n  \"floor_number\": 3,\n  \"room_category\": \"deluxe\",\n  \"room_type\": \"double\",\n  \"bed_type\": \"king\",\n  \"max_occupancy\": 2,\n  \"base_price\": 5500.00,\n  \"room_status\": \"vacant\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/rooms", "host": ["{{apiBase}}"], "path": ["rooms"] }
+            "url": {
+              "raw": "{{apiBase}}/rooms",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms"
+              ]
+            }
           }
         },
         {
           "name": "Update Room",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"guest_name\": \"John Doe\",\n  \"guest_phone\": \"+91-9876543210\",\n  \"room_status\": \"occupied\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/rooms/{{roomId}}", "host": ["{{apiBase}}"], "path": ["rooms", "{{roomId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/rooms/{{roomId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms",
+                "{{roomId}}"
+              ]
+            }
           }
         },
         {
           "name": "Update Room Status",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"room_status\": \"cleaning_pending\",\n  \"notes\": \"Guest checked out early\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/rooms/{{roomId}}/status", "host": ["{{apiBase}}"], "path": ["rooms", "{{roomId}}", "status"] }
+            "url": {
+              "raw": "{{apiBase}}/rooms/{{roomId}}/status",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms",
+                "{{roomId}}",
+                "status"
+              ]
+            }
           }
         },
         {
@@ -507,8 +935,21 @@
           "request": {
             "method": "POST",
             "header": [],
-            "body": { "mode": "raw", "raw": "" },
-            "url": { "raw": "{{apiBase}}/rooms/{{roomId}}/checkout", "host": ["{{apiBase}}"], "path": ["rooms", "{{roomId}}", "checkout"] }
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{apiBase}}/rooms/{{roomId}}/checkout",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms",
+                "{{roomId}}",
+                "checkout"
+              ]
+            }
           }
         }
       ]
@@ -537,16 +978,46 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/tasks?skip=0&limit=50",
-              "host": ["{{apiBase}}"],
-              "path": ["tasks"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tasks"
+              ],
               "query": [
-                { "key": "skip", "value": "0" },
-                { "key": "limit", "value": "50" },
-                { "key": "status", "value": "pending", "disabled": true },
-                { "key": "task_type", "value": "cleaning", "disabled": true },
-                { "key": "priority", "value": "high", "disabled": true },
-                { "key": "assigned_to", "value": "", "disabled": true },
-                { "key": "room_id", "value": "{{roomId}}", "disabled": true }
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                },
+                {
+                  "key": "task_type",
+                  "value": "cleaning",
+                  "disabled": true
+                },
+                {
+                  "key": "priority",
+                  "value": "high",
+                  "disabled": true
+                },
+                {
+                  "key": "assigned_to",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "room_id",
+                  "value": "{{roomId}}",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -555,7 +1026,16 @@
           "name": "Get Task",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{apiBase}}/tasks/{{taskId}}", "host": ["{{apiBase}}"], "path": ["tasks", "{{taskId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/tasks/{{taskId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}"
+              ]
+            }
           }
         },
         {
@@ -577,36 +1057,78 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"room_id\": \"{{roomId}}\",\n  \"task_type\": \"cleaning\",\n  \"priority\": \"high\",\n  \"description\": \"Deep clean and sanitize room before next check-in\",\n  \"assigned_to\": \"{{employeeId}}\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/tasks", "host": ["{{apiBase}}"], "path": ["tasks"] }
+            "url": {
+              "raw": "{{apiBase}}/tasks",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            }
           }
         },
         {
           "name": "Update Task",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"priority\": \"medium\",\n  \"description\": \"Standard cleaning required\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/tasks/{{taskId}}", "host": ["{{apiBase}}"], "path": ["tasks", "{{taskId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/tasks/{{taskId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}"
+              ]
+            }
           }
         },
         {
           "name": "Update Task Status",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"in_progress\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/tasks/{{taskId}}/status", "host": ["{{apiBase}}"], "path": ["tasks", "{{taskId}}", "status"] },
+            "url": {
+              "raw": "{{apiBase}}/tasks/{{taskId}}/status",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}",
+                "status"
+              ]
+            },
             "description": "Valid statuses: pending → assigned → in_progress → verification_pending → completed → approved"
           }
         },
@@ -615,8 +1137,22 @@
           "request": {
             "method": "POST",
             "header": [],
-            "body": { "mode": "raw", "raw": "" },
-            "url": { "raw": "{{apiBase}}/tasks/{{taskId}}/assign/{{employeeId}}", "host": ["{{apiBase}}"], "path": ["tasks", "{{taskId}}", "assign", "{{employeeId}}"] }
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{apiBase}}/tasks/{{taskId}}/assign/{{employeeId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}",
+                "assign",
+                "{{employeeId}}"
+              ]
+            }
           }
         },
         {
@@ -627,10 +1163,24 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "files", "type": "file", "src": [] }
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": []
+                }
               ]
             },
-            "url": { "raw": "{{apiBase}}/tasks/{{taskId}}/upload-media", "host": ["{{apiBase}}"], "path": ["tasks", "{{taskId}}", "upload-media"] }
+            "url": {
+              "raw": "{{apiBase}}/tasks/{{taskId}}/upload-media",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}",
+                "upload-media"
+              ]
+            }
           }
         }
       ]
@@ -659,15 +1209,41 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/tickets?skip=0&limit=50",
-              "host": ["{{apiBase}}"],
-              "path": ["tickets"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tickets"
+              ],
               "query": [
-                { "key": "skip", "value": "0" },
-                { "key": "limit", "value": "50" },
-                { "key": "status", "value": "open", "disabled": true },
-                { "key": "priority", "value": "high", "disabled": true },
-                { "key": "ticket_type", "value": "maintenance", "disabled": true },
-                { "key": "room_id", "value": "", "disabled": true }
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "status",
+                  "value": "open",
+                  "disabled": true
+                },
+                {
+                  "key": "priority",
+                  "value": "high",
+                  "disabled": true
+                },
+                {
+                  "key": "ticket_type",
+                  "value": "maintenance",
+                  "disabled": true
+                },
+                {
+                  "key": "room_id",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -676,7 +1252,16 @@
           "name": "Get Ticket",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{apiBase}}/tickets/{{ticketId}}", "host": ["{{apiBase}}"], "path": ["tickets", "{{ticketId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/tickets/{{ticketId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tickets",
+                "{{ticketId}}"
+              ]
+            }
           }
         },
         {
@@ -698,25 +1283,54 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"room_id\": \"{{roomId}}\",\n  \"ticket_type\": \"maintenance\",\n  \"priority\": \"medium\",\n  \"title\": \"AC not cooling\",\n  \"description\": \"The air conditioning unit in room 301 is not cooling below 26 degrees. Needs servicing.\",\n  \"reported_by_name\": \"Reception Staff\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/tickets", "host": ["{{apiBase}}"], "path": ["tickets"] }
+            "url": {
+              "raw": "{{apiBase}}/tickets",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tickets"
+              ]
+            }
           }
         },
         {
           "name": "Create Guest Ticket (Public)",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"room_id\": \"{{roomId}}\",\n  \"ticket_type\": \"housekeeping\",\n  \"priority\": \"low\",\n  \"title\": \"Need extra towels\",\n  \"description\": \"Please send 2 extra bath towels to room 301.\",\n  \"reported_by_name\": \"Guest\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/tickets/guest", "host": ["{{apiBase}}"], "path": ["tickets", "guest"] },
+            "url": {
+              "raw": "{{apiBase}}/tickets/guest",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tickets",
+                "guest"
+              ]
+            },
             "description": "Public endpoint – no auth required. Used by guest portal via QR code."
           }
         },
@@ -724,12 +1338,26 @@
           "name": "Update Ticket",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"in_progress\",\n  \"assigned_to\": \"{{employeeId}}\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/tickets/{{ticketId}}", "host": ["{{apiBase}}"], "path": ["tickets", "{{ticketId}}"] },
+            "url": {
+              "raw": "{{apiBase}}/tickets/{{ticketId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tickets",
+                "{{ticketId}}"
+              ]
+            },
             "description": "Valid statuses: open → assigned → in_progress → resolved → closed"
           }
         },
@@ -737,12 +1365,27 @@
           "name": "Add Ticket Comment",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"comment\": \"Technician dispatched. ETA 30 minutes.\",\n  \"is_internal\": true\n}"
             },
-            "url": { "raw": "{{apiBase}}/tickets/{{ticketId}}/comments", "host": ["{{apiBase}}"], "path": ["tickets", "{{ticketId}}", "comments"] }
+            "url": {
+              "raw": "{{apiBase}}/tickets/{{ticketId}}/comments",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tickets",
+                "{{ticketId}}",
+                "comments"
+              ]
+            }
           }
         }
       ]
@@ -771,13 +1414,32 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/inventory/items?skip=0&limit=100",
-              "host": ["{{apiBase}}"],
-              "path": ["inventory", "items"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inventory",
+                "items"
+              ],
               "query": [
-                { "key": "skip", "value": "0" },
-                { "key": "limit", "value": "100" },
-                { "key": "category", "value": "housekeeping", "disabled": true },
-                { "key": "low_stock_only", "value": "true", "disabled": true }
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "category",
+                  "value": "housekeeping",
+                  "disabled": true
+                },
+                {
+                  "key": "low_stock_only",
+                  "value": "true",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -801,48 +1463,105 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"item_name\": \"Hand Sanitizer 500ml\",\n  \"item_code\": \"HS-500\",\n  \"category\": \"amenities\",\n  \"unit\": \"bottle\",\n  \"current_stock\": 100,\n  \"minimum_stock\": 20,\n  \"unit_cost\": 85.00\n}"
             },
-            "url": { "raw": "{{apiBase}}/inventory/items", "host": ["{{apiBase}}"], "path": ["inventory", "items"] }
+            "url": {
+              "raw": "{{apiBase}}/inventory/items",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inventory",
+                "items"
+              ]
+            }
           }
         },
         {
           "name": "Update Inventory Item",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"minimum_stock\": 25,\n  \"unit_cost\": 90.00\n}"
             },
-            "url": { "raw": "{{apiBase}}/inventory/items/{{itemId}}", "host": ["{{apiBase}}"], "path": ["inventory", "items", "{{itemId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/inventory/items/{{itemId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inventory",
+                "items",
+                "{{itemId}}"
+              ]
+            }
           }
         },
         {
           "name": "Record Stock IN",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"inventory_item_id\": \"{{itemId}}\",\n  \"transaction_type\": \"IN\",\n  \"quantity\": 50,\n  \"notes\": \"Weekly restocking from vendor\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/inventory/transactions", "host": ["{{apiBase}}"], "path": ["inventory", "transactions"] }
+            "url": {
+              "raw": "{{apiBase}}/inventory/transactions",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inventory",
+                "transactions"
+              ]
+            }
           }
         },
         {
           "name": "Record Stock OUT",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"inventory_item_id\": \"{{itemId}}\",\n  \"transaction_type\": \"OUT\",\n  \"quantity\": 10,\n  \"notes\": \"Distributed to floors 2 and 3\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/inventory/transactions", "host": ["{{apiBase}}"], "path": ["inventory", "transactions"] }
+            "url": {
+              "raw": "{{apiBase}}/inventory/transactions",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inventory",
+                "transactions"
+              ]
+            }
           }
         },
         {
@@ -851,13 +1570,32 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/inventory/transactions?skip=0&limit=100",
-              "host": ["{{apiBase}}"],
-              "path": ["inventory", "transactions"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inventory",
+                "transactions"
+              ],
               "query": [
-                { "key": "skip", "value": "0" },
-                { "key": "limit", "value": "100" },
-                { "key": "inventory_item_id", "value": "{{itemId}}", "disabled": true },
-                { "key": "transaction_type", "value": "IN", "disabled": true }
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "inventory_item_id",
+                  "value": "{{itemId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "transaction_type",
+                  "value": "IN",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -873,10 +1611,19 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/dashboard/stats",
-              "host": ["{{apiBase}}"],
-              "path": ["dashboard", "stats"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "dashboard",
+                "stats"
+              ],
               "query": [
-                { "key": "property_id", "value": "{{propertyId}}", "disabled": true }
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -892,12 +1639,26 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/notifications?skip=0&limit=50",
-              "host": ["{{apiBase}}"],
-              "path": ["notifications"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications"
+              ],
               "query": [
-                { "key": "skip", "value": "0" },
-                { "key": "limit", "value": "50" },
-                { "key": "unread_only", "value": "true", "disabled": true }
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "unread_only",
+                  "value": "true",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -907,8 +1668,21 @@
           "request": {
             "method": "POST",
             "header": [],
-            "body": { "mode": "raw", "raw": "" },
-            "url": { "raw": "{{apiBase}}/notifications/<notification_id>/read", "host": ["{{apiBase}}"], "path": ["notifications", "<notification_id>", "read"] }
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{apiBase}}/notifications/<notification_id>/read",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "<notification_id>",
+                "read"
+              ]
+            }
           }
         },
         {
@@ -916,8 +1690,20 @@
           "request": {
             "method": "POST",
             "header": [],
-            "body": { "mode": "raw", "raw": "" },
-            "url": { "raw": "{{apiBase}}/notifications/read-all", "host": ["{{apiBase}}"], "path": ["notifications", "read-all"] }
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{apiBase}}/notifications/read-all",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            }
           }
         }
       ]
@@ -928,14 +1714,29 @@
         {
           "name": "Submit Guest Feedback (Public)",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"room_id\": \"{{roomId}}\",\n  \"guest_name\": \"Alice Johnson\",\n  \"rating\": 5,\n  \"review_text\": \"Excellent stay! The room was clean and the staff was friendly. Best hotel experience!\",\n  \"category\": \"overall\"\n}"
             },
-            "url": { "raw": "{{apiBase}}/feedback", "host": ["{{apiBase}}"], "path": ["feedback"] },
+            "url": {
+              "raw": "{{apiBase}}/feedback",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "feedback"
+              ]
+            },
             "description": "Public endpoint – no auth required. Used by guest portal."
           }
         },
@@ -945,13 +1746,31 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/feedback?skip=0&limit=50",
-              "host": ["{{apiBase}}"],
-              "path": ["feedback"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "feedback"
+              ],
               "query": [
-                { "key": "skip", "value": "0" },
-                { "key": "limit", "value": "50" },
-                { "key": "min_rating", "value": "4", "disabled": true },
-                { "key": "room_id", "value": "", "disabled": true }
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "min_rating",
+                  "value": "4",
+                  "disabled": true
+                },
+                {
+                  "key": "room_id",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -962,10 +1781,19 @@
             "method": "GET",
             "url": {
               "raw": "{{apiBase}}/feedback/summary",
-              "host": ["{{apiBase}}"],
-              "path": ["feedback", "summary"],
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "feedback",
+                "summary"
+              ],
               "query": [
-                { "key": "property_id", "value": "{{propertyId}}", "disabled": true }
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -977,29 +1805,105 @@
       "item": [
         {
           "name": "List Orders",
-          "event": [{ "listen": "test", "script": { "exec": ["if (pm.response.code===200){const b=pm.response.json();if(b.length>0)pm.collectionVariables.set('orderId',b[0].id);}"], "type": "text/javascript" } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code===200){const b=pm.response.json();if(b.length>0)pm.collectionVariables.set('orderId',b[0].id);}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
-            "url": { "raw": "{{apiBase}}/orders?skip=0&limit=50", "host": ["{{apiBase}}"], "path": ["orders"], "query": [{"key":"skip","value":"0"},{"key":"limit","value":"50"},{"key":"status","value":"pending","disabled":true}] }
+            "url": {
+              "raw": "{{apiBase}}/orders?skip=0&limit=50",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                }
+              ]
+            }
           }
         },
         {
           "name": "Create Order",
-          "event": [{ "listen": "test", "script": { "exec": ["if(pm.response.code===201){const b=pm.response.json();pm.collectionVariables.set('orderId',b.id);}"], "type": "text/javascript" } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if(pm.response.code===201){const b=pm.response.json();pm.collectionVariables.set('orderId',b.id);}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"room_id\": \"{{roomId}}\",\n  \"order_type\": \"food\",\n  \"guest_name\": \"Amit Shah\",\n  \"notes\": \"No spicy food\",\n  \"items\": [\n    { \"item_name\": \"Masala Chai\", \"quantity\": 2, \"unit_price\": 60 },\n    { \"item_name\": \"Veg Sandwich\", \"quantity\": 1, \"unit_price\": 120 }\n  ]\n}" },
-            "url": { "raw": "{{apiBase}}/orders", "host": ["{{apiBase}}"], "path": ["orders"] }
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"room_id\": \"{{roomId}}\",\n  \"order_type\": \"food\",\n  \"guest_name\": \"Amit Shah\",\n  \"notes\": \"No spicy food\",\n  \"items\": [\n    { \"item_name\": \"Masala Chai\", \"quantity\": 2, \"unit_price\": 60 },\n    { \"item_name\": \"Veg Sandwich\", \"quantity\": 1, \"unit_price\": 120 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{apiBase}}/orders",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            }
           }
         },
         {
           "name": "Update Order Status",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"status\": \"confirmed\"\n}" },
-            "url": { "raw": "{{apiBase}}/orders/{{orderId}}", "host": ["{{apiBase}}"], "path": ["orders", "{{orderId}}"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmed\"\n}"
+            },
+            "url": {
+              "raw": "{{apiBase}}/orders/{{orderId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}"
+              ]
+            },
             "description": "Status flow: pending → confirmed → preparing → out_for_delivery → delivered"
           }
         },
@@ -1007,7 +1911,16 @@
           "name": "Cancel Order",
           "request": {
             "method": "DELETE",
-            "url": { "raw": "{{apiBase}}/orders/{{orderId}}", "host": ["{{apiBase}}"], "path": ["orders", "{{orderId}}"] }
+            "url": {
+              "raw": "{{apiBase}}/orders/{{orderId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}"
+              ]
+            }
           }
         }
       ]
@@ -1019,36 +1932,130 @@
           "name": "Clock In",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"notes\": \"On time\"\n}" },
-            "url": { "raw": "{{apiBase}}/attendance/check-in", "host": ["{{apiBase}}"], "path": ["attendance", "check-in"] }
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"On time\"\n}"
+            },
+            "url": {
+              "raw": "{{apiBase}}/attendance/check-in",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "attendance",
+                "check-in"
+              ]
+            }
           }
         },
         {
           "name": "Clock Out",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"notes\": \"Shift complete\"\n}" },
-            "url": { "raw": "{{apiBase}}/attendance/check-out", "host": ["{{apiBase}}"], "path": ["attendance", "check-out"] }
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Shift complete\"\n}"
+            },
+            "url": {
+              "raw": "{{apiBase}}/attendance/check-out",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "attendance",
+                "check-out"
+              ]
+            }
           }
         },
         {
           "name": "Get Today's Attendance",
-          "request": { "method": "GET", "url": { "raw": "{{apiBase}}/attendance/today", "host": ["{{apiBase}}"], "path": ["attendance", "today"] } }
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/attendance/today",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "attendance",
+                "today"
+              ]
+            }
+          }
         },
         {
           "name": "Attendance History",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{apiBase}}/attendance/history?skip=0&limit=30", "host": ["{{apiBase}}"], "path": ["attendance", "history"], "query": [{"key":"skip","value":"0"},{"key":"limit","value":"30"},{"key":"employee_id","value":"{{employeeId}}","disabled":true},{"key":"from_date","value":"2026-05-01","disabled":true}] }
+            "url": {
+              "raw": "{{apiBase}}/attendance/history?skip=0&limit=30",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "attendance",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "30"
+                },
+                {
+                  "key": "employee_id",
+                  "value": "{{employeeId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "from_date",
+                  "value": "2026-05-01",
+                  "disabled": true
+                }
+              ]
+            }
           }
         },
         {
           "name": "Monthly Summary",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{apiBase}}/attendance/summary?month=5&year=2026", "host": ["{{apiBase}}"], "path": ["attendance", "summary"], "query": [{"key":"month","value":"5"},{"key":"year","value":"2026"}] }
+            "url": {
+              "raw": "{{apiBase}}/attendance/summary?month=5&year=2026",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "attendance",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "5"
+                },
+                {
+                  "key": "year",
+                  "value": "2026"
+                }
+              ]
+            }
           }
         }
       ]
@@ -1058,27 +2065,135 @@
       "item": [
         {
           "name": "Occupancy Report",
-          "request": { "method": "GET", "url": { "raw": "{{apiBase}}/reports/occupancy?days=30", "host": ["{{apiBase}}"], "path": ["reports", "occupancy"], "query": [{"key":"days","value":"30"}] } }
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/reports/occupancy?days=30",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "reports",
+                "occupancy"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            }
+          }
         },
         {
           "name": "Task Performance Report",
-          "request": { "method": "GET", "url": { "raw": "{{apiBase}}/reports/tasks?days=30", "host": ["{{apiBase}}"], "path": ["reports", "tasks"], "query": [{"key":"days","value":"30"}] } }
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/reports/tasks?days=30",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "reports",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            }
+          }
         },
         {
           "name": "Ticket Trend Report",
-          "request": { "method": "GET", "url": { "raw": "{{apiBase}}/reports/tickets?days=30", "host": ["{{apiBase}}"], "path": ["reports", "tickets"], "query": [{"key":"days","value":"30"}] } }
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/reports/tickets?days=30",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "reports",
+                "tickets"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            }
+          }
         },
         {
           "name": "Department Performance",
-          "request": { "method": "GET", "url": { "raw": "{{apiBase}}/reports/departments?days=30", "host": ["{{apiBase}}"], "path": ["reports", "departments"], "query": [{"key":"days","value":"30"}] } }
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/reports/departments?days=30",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "reports",
+                "departments"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            }
+          }
         },
         {
           "name": "Inventory Consumption",
-          "request": { "method": "GET", "url": { "raw": "{{apiBase}}/reports/inventory-consumption?days=30", "host": ["{{apiBase}}"], "path": ["reports", "inventory-consumption"], "query": [{"key":"days","value":"30"}] } }
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/reports/inventory-consumption?days=30",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "reports",
+                "inventory-consumption"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            }
+          }
         },
         {
           "name": "Revenue Report",
-          "request": { "method": "GET", "url": { "raw": "{{apiBase}}/reports/revenue?days=30", "host": ["{{apiBase}}"], "path": ["reports", "revenue"], "query": [{"key":"days","value":"30"}] } }
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/reports/revenue?days=30",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "reports",
+                "revenue"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -1090,20 +2205,1606 @@
           "request": {
             "method": "POST",
             "header": [],
-            "body": { "mode": "formdata", "formdata": [{"key":"files","type":"file","src":[]}] },
-            "url": { "raw": "{{apiBase}}/verification/task/{{taskId}}", "host": ["{{apiBase}}"], "path": ["verification", "task", "{{taskId}}"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{apiBase}}/verification/task/{{taskId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "verification",
+                "task",
+                "{{taskId}}"
+              ]
+            },
             "description": "Upload room photos (multipart `files`). Returns 202 and queues Celery: worker downloads each stored URL, resolves optional benchmark + room category, POSTs multipart to WesenseU `/rooms/verify`, then WesenseU callbacks `POST /api/v1/verification/callback`. Requires running Celery + WesenseU for full flow."
           }
         },
         {
           "name": "Get Verification Result",
-          "request": { "method": "GET", "url": { "raw": "{{apiBase}}/verification/task/{{taskId}}", "host": ["{{apiBase}}"], "path": ["verification", "task", "{{taskId}}"] } }
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/verification/task/{{taskId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "verification",
+                "task",
+                "{{taskId}}"
+              ]
+            }
+          }
         },
         {
           "name": "Manual Override",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{apiBase}}/verification/task/{{taskId}}/override?action=approve&notes=Supervisor+verified+in+person", "host": ["{{apiBase}}"], "path": ["verification", "task", "{{taskId}}", "override"], "query": [{"key":"action","value":"approve"},{"key":"notes","value":"Supervisor verified in person"}] }
+            "url": {
+              "raw": "{{apiBase}}/verification/task/{{taskId}}/override?action=approve&notes=Supervisor+verified+in+person",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "verification",
+                "task",
+                "{{taskId}}",
+                "override"
+              ],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "approve"
+                },
+                {
+                  "key": "notes",
+                  "value": "Supervisor verified in person"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Catalog",
+      "item": [
+        {
+          "name": "List Catalog Kinds",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/catalog/kinds",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "catalog",
+                "kinds"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Catalog Items",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/catalog/items",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "catalog",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "kind",
+                  "value": "amenity"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Catalog Item",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/catalog/items",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "catalog",
+                "items"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"amenity\",\n  \"display_name\": \"Mini Bar\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Catalog Item",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{apiBase}}/catalog/items/{{catalogItemId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "catalog",
+                "items",
+                "{{catalogItemId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"Updated name\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Catalog Item",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/catalog/items/{{catalogItemId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "catalog",
+                "items",
+                "{{catalogItemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Property Features",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/catalog/properties/{{propertyId}}/features",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "catalog",
+                "properties",
+                "{{propertyId}}",
+                "features"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Set Property Features",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/catalog/properties/{{propertyId}}/features",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "catalog",
+                "properties",
+                "{{propertyId}}",
+                "features"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"catalog_item_ids\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Room Category Amenities",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/catalog/room-categories/{{categoryId}}/amenities",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "catalog",
+                "room-categories",
+                "{{categoryId}}",
+                "amenities"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Set Room Category Amenities",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/catalog/room-categories/{{categoryId}}/amenities",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "catalog",
+                "room-categories",
+                "{{categoryId}}",
+                "amenities"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"catalog_item_ids\": []\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚀 Onboarding",
+      "item": [
+        {
+          "name": "List Onboarding Steps",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/onboarding/steps",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "onboarding",
+                "steps"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Onboarding Sessions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/onboarding/sessions",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "onboarding",
+                "sessions"
+              ],
+              "query": [
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Onboarding Session",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/onboarding/sessions",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "onboarding",
+                "sessions"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": \"{{propertyId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Onboarding Session",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/onboarding/sessions/{{sessionId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "onboarding",
+                "sessions",
+                "{{sessionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Onboarding Session",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{apiBase}}/onboarding/sessions/{{sessionId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "onboarding",
+                "sessions",
+                "{{sessionId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_step\": \"inventory\",\n  \"payload_patch\": {}\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📞 Contacts",
+      "item": [
+        {
+          "name": "List Property Contacts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/contacts/properties/{{propertyId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "contacts",
+                "properties",
+                "{{propertyId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Property Contact",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/contacts/properties/{{propertyId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "contacts",
+                "properties",
+                "{{propertyId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact_type\": \"phone\",\n  \"value\": \"+91-8000000000\",\n  \"label\": \"Front desk\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Property Contact",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{apiBase}}/contacts/properties/{{propertyId}}/{{contactId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "contacts",
+                "properties",
+                "{{propertyId}}",
+                "{{contactId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": \"+91-8111111111\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Property Contact",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/contacts/properties/{{propertyId}}/{{contactId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "contacts",
+                "properties",
+                "{{propertyId}}",
+                "{{contactId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Customer Contacts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/contacts/customers/{{customerId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "contacts",
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "description": "Set customerId from B2B customer UUID"
+          }
+        },
+        {
+          "name": "Add Customer Contact",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/contacts/customers/{{customerId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "contacts",
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact_type\": \"email\",\n  \"value\": \"owner@example.com\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🍽️ F&B",
+      "item": [
+        {
+          "name": "List Outlets",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/fb/properties/{{propertyId}}/outlets",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "fb",
+                "properties",
+                "{{propertyId}}",
+                "outlets"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Outlet",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/fb/properties/{{propertyId}}/outlets",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "fb",
+                "properties",
+                "{{propertyId}}",
+                "outlets"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"name\": \"Main Restaurant\",\n  \"outlet_type\": \"restaurant\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Outlet",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{apiBase}}/fb/outlets/{{outletId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "fb",
+                "outlets",
+                "{{outletId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Restaurant\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Outlet",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/fb/outlets/{{outletId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "fb",
+                "outlets",
+                "{{outletId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Menu Items",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/fb/outlets/{{outletId}}/menu",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "fb",
+                "outlets",
+                "{{outletId}}",
+                "menu"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Menu Item",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/fb/outlets/{{outletId}}/menu",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "fb",
+                "outlets",
+                "{{outletId}}",
+                "menu"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Masala Dosa\",\n  \"price\": 180\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Menu Item",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{apiBase}}/fb/menu/{{menuItemId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "fb",
+                "menu",
+                "{{menuItemId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 200\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Menu Item",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/fb/menu/{{menuItemId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "fb",
+                "menu",
+                "{{menuItemId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚚 Vendors",
+      "item": [
+        {
+          "name": "List Vendors",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/vendors",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "vendors"
+              ],
+              "query": [
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Vendor",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/vendors",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "vendors"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"name\": \"Linen Supply Co\",\n  \"phone\": \"+91-9000000001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Vendor",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{apiBase}}/vendors/{{vendorId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "vendors",
+                "{{vendorId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+91-9000000002\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Vendor",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/vendors/{{vendorId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "vendors",
+                "{{vendorId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧳 Guest Stays",
+      "item": [
+        {
+          "name": "List Guest Stays",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/guest-stays",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "guest-stays"
+              ],
+              "query": [
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Guest Stay",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/guest-stays/{{guestStayId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "guest-stays",
+                "{{guestStayId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Guest Stay Folio",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/guest-stays/{{guestStayId}}/folio",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "guest-stays",
+                "{{guestStayId}}",
+                "folio"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Guest Check-in (Room)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/rooms/{{roomId}}/guest-check-in",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms",
+                "{{roomId}}",
+                "guest-check-in"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guest_name\": \"John Doe\",\n  \"guest_phone\": \"+91-9999999999\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Room Checkout",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/rooms/{{roomId}}/checkout",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms",
+                "{{roomId}}",
+                "checkout"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⏱️ Task SLA",
+      "item": [
+        {
+          "name": "List SLA Policies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/task-sla-policies",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "task-sla-policies"
+              ],
+              "query": [
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create SLA Policy",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/task-sla-policies",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "task-sla-policies"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"task_type\": \"cleaning\",\n  \"service_type\": \"*\",\n  \"sla_minutes\": 120,\n  \"root_cause_category\": \"capacity\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update SLA Policy",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{apiBase}}/task-sla-policies/{{slaPolicyId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "task-sla-policies",
+                "{{slaPolicyId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sla_minutes\": 90\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete SLA Policy",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/task-sla-policies/{{slaPolicyId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "task-sla-policies",
+                "{{slaPolicyId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏷️ Room Categories",
+      "item": [
+        {
+          "name": "List Room Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/room-categories",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "room-categories"
+              ],
+              "query": [
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Category Availability",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/room-categories/availability",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "room-categories",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Room Category",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/room-categories",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "room-categories"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"code\": \"deluxe\",\n  \"display_name\": \"Deluxe\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Room Category",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{apiBase}}/room-categories/{{categoryId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "room-categories",
+                "{{categoryId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"Deluxe Updated\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate Room Category",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/room-categories/{{categoryId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "room-categories",
+                "{{categoryId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏢 Property Schedules (P2)",
+      "item": [
+        {
+          "name": "Get Property Schedules",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/properties/{{propertyId}}/schedules",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "schedules"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Set Property Schedules",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/properties/{{propertyId}}/schedules",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "schedules"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schedules\": [\n    {\"day_of_week\": 0, \"open_time\": \"06:00:00\", \"close_time\": \"23:00:00\", \"is_closed\": false}\n  ]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏛️ Department Duties (P2)",
+      "item": [
+        {
+          "name": "Get Department Duties",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/departments/{{departmentId}}/duties",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "departments",
+                "{{departmentId}}",
+                "duties"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Set Department Duties",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/departments/{{departmentId}}/duties",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "departments",
+                "{{departmentId}}",
+                "duties"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"catalog_item_ids\": []\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛏️ Rooms Bulk (P2)",
+      "item": [
+        {
+          "name": "Bulk Create Rooms",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/rooms/bulk",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms",
+                "bulk"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"property_room_category_id\": \"{{categoryId}}\",\n  \"start_number\": 201,\n  \"count\": 5,\n  \"room_number_prefix\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Room Variants",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/rooms/variants",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "rooms",
+                "variants"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"property_room_category_id\": \"{{categoryId}}\",\n  \"variant_label\": \"Pool View\",\n  \"room_count\": 3,\n  \"create_rooms\": true\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "✅ Tasks (extended)",
+      "item": [
+        {
+          "name": "Auto-assign Task",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/tasks/{{taskId}}/auto-assign",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}",
+                "auto-assign"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Benchmark Requirements",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/tasks/{{taskId}}/benchmark-requirements",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}",
+                "benchmark-requirements"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/tasks/{{taskId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Inventory (extended)",
+      "item": [
+        {
+          "name": "Upload Item Photo",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/inventory/items/{{itemId}}/photo",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inventory",
+                "items",
+                "{{itemId}}",
+                "photo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Inventory Item",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/inventory/items/{{itemId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inventory",
+                "items",
+                "{{itemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Task Inventory Rules",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/inventory/task-rules",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inventory",
+                "task-rules"
+              ],
+              "query": [
+                {
+                  "key": "property_id",
+                  "value": "{{propertyId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Task Inventory Rule",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/inventory/task-rules",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inventory",
+                "task-rules"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": \"{{propertyId}}\",\n  \"task_type\": \"cleaning\",\n  \"inventory_item_id\": \"{{itemId}}\",\n  \"quantity_per_task\": 1\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Employees (extended)",
+      "item": [
+        {
+          "name": "Import Employees CSV",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/employees/import",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "employees",
+                "import"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🕐 Attendance (extended)",
+      "item": [
+        {
+          "name": "Create Attendance Record",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/attendance/records",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "attendance",
+                "records"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": \"{{employeeId}}\",\n  \"record_date\": \"2026-05-20\",\n  \"status\": \"leave\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Import Attendance CSV",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/attendance/import",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "attendance",
+                "import"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Employee Schedule",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/attendance/employees/{{employeeId}}/schedule",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "attendance",
+                "employees",
+                "{{employeeId}}",
+                "schedule"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weekly_off_days\": [0],\n  \"lunch_start\": \"13:00:00\",\n  \"lunch_end\": \"14:00:00\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📈 Reports (extended)",
+      "item": [
+        {
+          "name": "Attendance Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/reports/attendance",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "reports",
+                "attendance"
+              ],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "5"
+                },
+                {
+                  "key": "year",
+                  "value": "2026"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "List DB Tables",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBase}}/system/db-tables?include_row_counts=true",
+              "host": ["{{apiBase}}"],
+              "path": ["system", "db-tables"],
+              "query": [
+                { "key": "include_row_counts", "value": "true" }
+              ]
+            },
+            "description": "Super admin only. Lists public schema tables, columns, row counts, and soft-delete flags."
           }
         }
       ]
@@ -1114,17 +3815,38 @@
         {
           "name": "Health Check",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
           }
         },
         {
           "name": "API Docs (Swagger)",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/docs", "host": ["{{baseUrl}}"], "path": ["api", "docs"] }
+            "url": {
+              "raw": "{{baseUrl}}/api/docs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docs"
+              ]
+            }
           }
         }
       ]

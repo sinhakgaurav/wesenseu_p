@@ -30,3 +30,24 @@ class DashboardStats(BaseModel):
     room_status_chart: List[Dict[str, Any]] = []
     task_completion_rate: float = 0.0
     avg_ticket_resolution_time: Optional[float] = None
+
+
+class PropertyDashboardSummary(BaseModel):
+    property_id: str
+    property_name: str
+    city: Optional[str] = None
+    total_rooms: int = 0
+    open_tasks: int = 0
+    open_tickets: int = 0
+    occupancy_pct: float = 0.0
+
+
+class PlatformDashboardStats(BaseModel):
+    total_properties: int
+    active_properties: int
+    total_customers: int
+    total_rooms: int
+    open_tasks: int
+    open_tickets: int
+    total_employees: int
+    properties: List[PropertyDashboardSummary] = []

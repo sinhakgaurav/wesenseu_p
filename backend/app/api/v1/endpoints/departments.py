@@ -2,7 +2,7 @@ import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_current_user
@@ -10,7 +10,16 @@ from app.db.base import get_db
 from app.models.department import Department
 from app.models.employee import Employee
 from app.models.property import Property
+from app.models.catalog import CatalogItem
+from app.models.p2_extensions import DepartmentCatalogDuty
+from app.schemas.catalog import CatalogItemResponse
 from app.schemas.department import DepartmentCreate, DepartmentResponse, DepartmentUpdate
+from pydantic import BaseModel
+
+
+class DepartmentDutiesSet(BaseModel):
+    catalog_item_ids: list[uuid.UUID]
+
 
 router = APIRouter()
 
@@ -164,3 +173,42 @@ async def delete_department(
     _assert_can_read_dept(current_user, dept)
     dept.is_active = False
     await db.commit()
+
+
+@router.get("/{department_id}/duties", response_model=list[CatalogItemResponse])
+async def get_department_duties(
+    department_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    dept = await _get_department_or_404(db, department_id)
+    _assert_can_read_dept(current_user, dept)
+    rows = (
+        await db.execute(
+            select(CatalogItem)
+            .join(DepartmentCatalogDuty, DepartmentCatalogDuty.catalog_item_id == CatalogItem.id)
+            .where(DepartmentCatalogDuty.department_id == department_id, CatalogItem.is_active == True)
+        )
+    ).scalars().all()
+    return rows
+
+
+@router.put("/{department_id}/duties", response_model=list[CatalogItemResponse])
+async def set_department_duties(
+    department_id: uuid.UUID,
+    body: DepartmentDutiesSet,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role not in WRITE_ROLES:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    dept = await _get_department_or_404(db, department_id)
+    _assert_can_read_dept(current_user, dept)
+    await db.execute(delete(DepartmentCatalogDuty).where(DepartmentCatalogDuty.department_id == department_id))
+    for cid in body.catalog_item_ids:
+        item = (await db.execute(select(CatalogItem).where(CatalogItem.id == cid))).scalar_one_or_none()
+        if not item or item.kind != "department_duty":
+            raise HTTPException(status_code=400, detail=f"Invalid department_duty id: {cid}")
+        db.add(DepartmentCatalogDuty(department_id=department_id, catalog_item_id=cid))
+    await db.commit()
+    return await get_department_duties(department_id, db, current_user)

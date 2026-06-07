@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
@@ -11,6 +11,9 @@ from app.schemas.inventory import (
     InventoryItemCreate, InventoryItemUpdate, InventoryItemResponse,
     InventoryTransactionCreate, InventoryTransactionResponse
 )
+from app.schemas.p2 import TaskInventoryRuleCreate
+from app.models.p2_extensions import TaskInventoryRule
+from app.services.storage import upload_file
 from app.api.v1.deps import get_current_user
 
 router = APIRouter()
@@ -50,6 +53,7 @@ async def list_inventory(
             "minimum_stock": item.minimum_stock,
             "unit_cost": item.unit_cost,
             "vendor_id": item.vendor_id,
+            "photo_url": item.photo_url,
             "is_active": item.is_active,
             "is_low_stock": item.current_stock <= item.minimum_stock,
             "created_at": item.created_at,
@@ -179,3 +183,64 @@ async def list_transactions(
     query = query.offset(skip).limit(limit).order_by(InventoryTransaction.created_at.desc())
     result = await db.execute(query)
     return result.scalars().all()
+
+
+@router.post("/items/{item_id}/photo", response_model=InventoryItemResponse)
+async def upload_inventory_photo(
+    item_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    result = await db.execute(select(InventoryItem).where(InventoryItem.id == item_id))
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item.photo_url = await upload_file(file, folder=f"inventory/{item_id}")
+    await db.commit()
+    await db.refresh(item)
+    return InventoryItemResponse(
+        **{k: getattr(item, k) for k in InventoryItemResponse.model_fields if hasattr(item, k)},
+        is_low_stock=item.current_stock <= item.minimum_stock,
+    )
+
+
+@router.get("/task-rules", response_model=list)
+async def list_task_inventory_rules(
+    property_id: Optional[uuid.UUID] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    prop_id = property_id or current_user.property_id
+    rows = (
+        await db.execute(
+            select(TaskInventoryRule).where(
+                TaskInventoryRule.property_id == prop_id,
+                TaskInventoryRule.is_active == True,
+            )
+        )
+    ).scalars().all()
+    return [
+        {
+            "id": str(r.id),
+            "task_type": r.task_type,
+            "inventory_item_id": str(r.inventory_item_id),
+            "quantity_per_task": r.quantity_per_task,
+        }
+        for r in rows
+    ]
+
+
+@router.post("/task-rules", status_code=status.HTTP_201_CREATED)
+async def create_task_inventory_rule(
+    data: TaskInventoryRuleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role not in ("super_admin", "property_manager"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    rule = TaskInventoryRule(**data.model_dump())
+    db.add(rule)
+    await db.commit()
+    await db.refresh(rule)
+    return {"id": str(rule.id)}

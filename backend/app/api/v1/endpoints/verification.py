@@ -21,6 +21,7 @@ from app.models.room import Room
 from app.models.room_verification import RoomVerification
 from app.models.task import Task
 from app.services.storage import upload_file
+from app.services.benchmark_requirements import validate_cleaning_task_photos
 from app.api.v1.deps import get_current_user
 from app.core.config import settings
 
@@ -53,6 +54,10 @@ async def submit_verification(
 
     if not image_urls:
         raise HTTPException(status_code=422, detail="No images could be uploaded")
+
+    err = await validate_cleaning_task_photos(db, task)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
 
     # Resolve room number for context
     room_number = ""

@@ -14,12 +14,13 @@ import uuid
 from datetime import datetime
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
+from app.db.soft_delete import apply_soft_delete, not_deleted_clause, restore_soft_deleted
 from app.models.page import Page
 from app.models.employee import Employee
 from app.api.v1.deps import get_current_user
@@ -77,9 +78,11 @@ def _page_dict(p: Page, admin: bool = False) -> dict:
 
 @router.get("")
 async def list_published_pages(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Page).where(Page.is_published == True).order_by(Page.page_type, Page.title)
-    )
+    q = select(Page).where(Page.is_published == True)
+    clause = not_deleted_clause(Page)
+    if clause is not None:
+        q = q.where(clause)
+    result = await db.execute(q.order_by(Page.page_type, Page.title))
     return [_page_dict(p) for p in result.scalars().all()]
 
 
@@ -96,12 +99,18 @@ async def get_page_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
 
 @router.get("/admin/all")
 async def admin_list_pages(
+    include_deleted: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user: Employee = Depends(get_current_user),
 ):
     if current_user.role != "super_admin":
         raise HTTPException(status_code=403, detail="Super admin only")
-    result = await db.execute(select(Page).order_by(Page.updated_at.desc()))
+    q = select(Page)
+    if not include_deleted:
+        clause = not_deleted_clause(Page)
+        if clause is not None:
+            q = q.where(clause)
+    result = await db.execute(q.order_by(Page.updated_at.desc()))
     return [_page_dict(p, admin=True) for p in result.scalars().all()]
 
 
@@ -159,8 +168,26 @@ async def delete_page(
     p = result.scalar_one_or_none()
     if not p:
         raise HTTPException(status_code=404, detail="Page not found")
-    await db.delete(p)
+    apply_soft_delete(p)
+    p.is_published = False
     await db.commit()
+
+
+@router.post("/{page_id}/restore")
+async def restore_page(
+    page_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+    result = await db.execute(select(Page).where(Page.id == page_id))
+    p = result.scalar_one_or_none()
+    if not p:
+        raise HTTPException(status_code=404, detail="Page not found")
+    restore_soft_deleted(p)
+    await db.commit()
+    return _page_dict(p, admin=True)
 
 
 @router.post("/{page_id}/publish")

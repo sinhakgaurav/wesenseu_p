@@ -3,22 +3,21 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Shirt, Plus } from 'lucide-react'
 import api from '@/lib/api'
 import toast from 'react-hot-toast'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 import { Modal } from '@/components/ui/Modal'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 
 export function LaundryPage() {
   const qc = useQueryClient()
-  const user = useSelector((s: RootState) => s.auth.user)
-  const propertyId = user?.property_id
+  const { propertyId, enabled } = useAdminPropertyId()
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ guest_name: '', guest_phone: '', notes: '', item_desc: 'Guest laundry', qty: 1 })
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['laundry', propertyId],
+    enabled,
     queryFn: () => api.get(`/laundry?property_id=${propertyId}`).then(r => r.data),
-    enabled: !!propertyId,
   })
 
   const createMut = useMutation({
@@ -45,7 +44,6 @@ export function LaundryPage() {
     },
   })
 
-  if (!propertyId) return <p className="text-gray-500">No property context.</p>
   if (isLoading) return <PageLoader />
 
   const next = (cur: string) => {
@@ -55,6 +53,7 @@ export function LaundryPage() {
   }
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -109,5 +108,6 @@ export function LaundryPage() {
         </div>
       </Modal>
     </div>
+    </RequirePropertyScope>
   )
 }

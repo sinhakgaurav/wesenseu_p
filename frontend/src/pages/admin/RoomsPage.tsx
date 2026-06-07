@@ -9,6 +9,8 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
 import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
+import { usePropertyScope } from '@/context/PropertyScopeContext'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 const ROOM_STATUS_OPTIONS = [
   { value: '', label: 'All Status' },
@@ -43,6 +45,8 @@ type NewRoomForm = {
 export function RoomsPage() {
   const queryClient = useQueryClient()
   const user = useSelector((state: RootState) => state.auth.user)
+  const { effectivePropertyId } = usePropertyScope()
+  const propertyId = effectivePropertyId || ''
   const canManageRoom = user?.role === 'super_admin' || user?.role === 'property_manager'
 
   const [filterStatus, setFilterStatus] = useState('')
@@ -61,14 +65,14 @@ export function RoomsPage() {
     room_category: '',
     property_room_category_id: '',
     floor_number: 1,
-    property_id: user?.property_id || '',
+    property_id: propertyId,
   })
 
   const { data: roomCategories = [] } = useQuery<PropertyRoomCategory[]>({
-    queryKey: ['room-categories', user?.property_id],
-    enabled: !!user?.property_id,
+    queryKey: ['room-categories', propertyId],
+    enabled: !!propertyId,
     queryFn: async () => {
-      const { data } = await api.get(`/room-categories?property_id=${user!.property_id}`)
+      const { data } = await api.get(`/room-categories?property_id=${propertyId}`)
       return data
     },
   })
@@ -76,10 +80,11 @@ export function RoomsPage() {
   const activeCategories = roomCategories.filter((c) => c.is_active)
 
   const { data: rooms = [], isLoading } = useQuery<Room[]>({
-    queryKey: ['rooms', user?.property_id, filterStatus],
+    queryKey: ['rooms', propertyId, filterStatus],
+    enabled: !!propertyId,
     queryFn: async () => {
       const params = new URLSearchParams()
-      if (user?.property_id) params.set('property_id', user.property_id)
+      if (propertyId) params.set('property_id', propertyId)
       if (filterStatus) params.set('room_status', filterStatus)
       params.set('limit', '200')
       const { data } = await api.get(`/rooms?${params}`)
@@ -187,7 +192,7 @@ export function RoomsPage() {
       room_category: '',
       property_room_category_id: first,
       floor_number: 1,
-      property_id: user?.property_id || '',
+      property_id: propertyId,
     })
     setShowAddModal(true)
   }
@@ -202,6 +207,7 @@ export function RoomsPage() {
   if (isLoading) return <PageLoader />
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -482,5 +488,6 @@ export function RoomsPage() {
         </Modal>
       )}
     </div>
+    </RequirePropertyScope>
   )
 }

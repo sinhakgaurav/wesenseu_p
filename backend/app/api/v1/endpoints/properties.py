@@ -8,6 +8,9 @@ from app.db.base import get_db
 from app.models.property import Property
 from app.models.employee import Employee
 from app.schemas.property import PropertyCreate, PropertyUpdate, PropertyResponse
+from app.schemas.p2 import PropertyScheduleSet
+from app.models.p2_extensions import PropertySchedule
+from sqlalchemy import delete
 from app.api.v1.deps import get_current_user
 
 router = APIRouter()
@@ -115,3 +118,58 @@ async def delete_property(
     prop.is_active = False
     prop.subscription_status = "suspended"
     await db.commit()
+
+
+@router.get("/{property_id}/schedules")
+async def get_property_schedules(
+    property_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    result = await db.execute(select(Property).where(Property.id == property_id))
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    _assert_property_access(current_user, prop)
+    rows = (
+        await db.execute(select(PropertySchedule).where(PropertySchedule.property_id == property_id))
+    ).scalars().all()
+    return [
+        {
+            "day_of_week": r.day_of_week,
+            "open_time": r.open_time.isoformat(),
+            "close_time": r.close_time.isoformat(),
+            "department_id": str(r.department_id) if r.department_id else None,
+            "is_closed": r.is_closed,
+        }
+        for r in rows
+    ]
+
+
+@router.put("/{property_id}/schedules")
+async def set_property_schedules(
+    property_id: uuid.UUID,
+    body: PropertyScheduleSet,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role not in ("super_admin", "property_manager"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    result = await db.execute(select(Property).where(Property.id == property_id))
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    await db.execute(delete(PropertySchedule).where(PropertySchedule.property_id == property_id))
+    for entry in body.schedules:
+        db.add(
+            PropertySchedule(
+                property_id=property_id,
+                department_id=entry.department_id,
+                day_of_week=entry.day_of_week,
+                open_time=entry.open_time,
+                close_time=entry.close_time,
+                is_closed=entry.is_closed,
+            )
+        )
+    await db.commit()
+    return await get_property_schedules(property_id, db, current_user)

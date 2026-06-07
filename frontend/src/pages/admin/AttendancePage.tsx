@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { CalendarClock, Clock, CheckCircle, Users, Loader2, UserCheck, UserX } from 'lucide-react'
 import api from '@/lib/api'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 interface AttendanceSummary {
   employee_id: string; employee_name: string
@@ -23,21 +23,22 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export function AttendancePage() {
-  const { user } = useSelector((s: RootState) => s.auth)
+  const { propertyId, enabled } = useAdminPropertyId()
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [year, setYear] = useState(now.getFullYear())
   const [view, setView] = useState<'summary' | 'history'>('summary')
 
   const { data: summary = [], isLoading: sLoading } = useQuery<AttendanceSummary[]>({
-    queryKey: ['attendance-summary', month, year],
-    queryFn: () => api.get(`/attendance/summary?month=${month}&year=${year}`).then(r => r.data),
+    queryKey: ['attendance-summary', month, year, propertyId],
+    enabled,
+    queryFn: () => api.get(`/attendance/summary?month=${month}&year=${year}&property_id=${propertyId}`).then(r => r.data),
   })
 
   const { data: history = [], isLoading: hLoading } = useQuery<AttendanceRecord[]>({
-    queryKey: ['attendance-history', month, year],
-    queryFn: () => api.get(`/attendance/history?limit=100&from_date=${year}-${String(month).padStart(2,'0')}-01`).then(r => r.data),
-    enabled: view === 'history',
+    queryKey: ['attendance-history', month, year, propertyId],
+    queryFn: () => api.get(`/attendance/history?limit=100&from_date=${year}-${String(month).padStart(2,'0')}-01&property_id=${propertyId}`).then(r => r.data),
+    enabled: enabled && view === 'history',
   })
 
   const presentCount = summary.filter(s => s.present_days > 0).length
@@ -49,6 +50,7 @@ export function AttendancePage() {
   const fmt = (dt?: string) => dt ? new Date(dt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -183,5 +185,6 @@ export function AttendancePage() {
         </div>
       )}
     </div>
+    </RequirePropertyScope>
   )
 }

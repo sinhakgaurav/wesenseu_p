@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Package, AlertTriangle, ArrowUp, ArrowDown, Search } from 'lucide-react'
+import { Plus, Package, AlertTriangle, ArrowUp, ArrowDown, Search, Pencil, Trash2, ImagePlus } from 'lucide-react'
 import api from '@/lib/api'
 import type { InventoryItem } from '@/lib/types'
 import { Modal } from '@/components/ui/Modal'
@@ -8,12 +8,16 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
 import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
+import { usePropertyScope } from '@/context/PropertyScopeContext'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 const CATEGORIES = ['Toiletries', 'Cleaning', 'Towels', 'Bedsheets', 'Kitchen', 'Medical', 'Guest Consumables', 'Laundry']
 
 export function InventoryPage() {
   const queryClient = useQueryClient()
   const user = useSelector((state: RootState) => state.auth.user)
+  const { effectivePropertyId } = usePropertyScope()
+  const propertyId = effectivePropertyId || ''
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
@@ -24,6 +28,9 @@ export function InventoryPage() {
   const [transactionType, setTransactionType] = useState<'IN' | 'OUT'>('IN')
   const [transactionQty, setTransactionQty] = useState(1)
   const [transactionNotes, setTransactionNotes] = useState('')
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editItem, setEditItem] = useState<InventoryItem | null>(null)
+  const [editForm, setEditForm] = useState({ item_name: '', minimum_stock: 5, unit_cost: '' })
 
   const [newItem, setNewItem] = useState({
     item_name: '',
@@ -32,14 +39,15 @@ export function InventoryPage() {
     current_stock: 0,
     minimum_stock: 5,
     unit_cost: '',
-    property_id: user?.property_id || '',
+    property_id: propertyId,
   })
 
   const { data: items = [], isLoading } = useQuery<InventoryItem[]>({
-    queryKey: ['inventory', user?.property_id, filterCategory, showLowStockOnly],
+    queryKey: ['inventory', propertyId, filterCategory, showLowStockOnly],
+    enabled: !!propertyId,
     queryFn: async () => {
       const params = new URLSearchParams()
-      if (user?.property_id) params.set('property_id', user.property_id)
+      if (propertyId) params.set('property_id', propertyId)
       if (filterCategory) params.set('category', filterCategory)
       if (showLowStockOnly) params.set('low_stock_only', 'true')
       const { data } = await api.get(`/inventory/items?${params}`)
@@ -56,6 +64,40 @@ export function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       setShowAddModal(false)
       toast.success('Item added')
+    },
+  })
+
+  const updateItemMutation = useMutation({
+    mutationFn: () =>
+      api.patch(`/inventory/items/${editItem!.id}`, {
+        item_name: editForm.item_name,
+        minimum_stock: editForm.minimum_stock,
+        unit_cost: editForm.unit_cost ? Number(editForm.unit_cost) : undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      setShowEditModal(false)
+      toast.success('Item updated')
+    },
+  })
+
+  const deleteItemMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/inventory/items/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      toast.success('Item deactivated')
+    },
+  })
+
+  const photoMutation = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      return api.post(`/inventory/items/${id}/photo`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      toast.success('Photo uploaded')
     },
   })
 
@@ -83,6 +125,7 @@ export function InventoryPage() {
   if (isLoading) return <PageLoader />
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -172,7 +215,36 @@ export function InventoryPage() {
                 <td className="td text-gray-500">{item.minimum_stock} {item.unit}</td>
                 <td className="td text-gray-500">{item.unit_cost ? `₹${item.unit_cost}` : '-'}</td>
                 <td className="td">
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-1 items-center">
+                    <button
+                      onClick={() => {
+                        setEditItem(item)
+                        setEditForm({
+                          item_name: item.item_name,
+                          minimum_stock: item.minimum_stock,
+                          unit_cost: item.unit_cost ? String(item.unit_cost) : '',
+                        })
+                        setShowEditModal(true)
+                      }}
+                      className="p-1.5 text-gray-500 hover:bg-gray-100 rounded"
+                      title="Edit"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <label className="p-1.5 text-blue-600 hover:bg-blue-50 rounded cursor-pointer" title="Photo">
+                      <ImagePlus className="w-3.5 h-3.5" />
+                      <input type="file" accept="image/*" className="hidden" onChange={e => {
+                        const f = e.target.files?.[0]
+                        if (f) photoMutation.mutate({ id: item.id, file: f })
+                      }} />
+                    </label>
+                    <button
+                      onClick={() => { if (confirm('Deactivate item?')) deleteItemMutation.mutate(item.id) }}
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                      title="Deactivate"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                     <button
                       onClick={() => { setSelectedItem(item); setTransactionType('IN'); setTransactionQty(1); setShowTransactionModal(true) }}
                       className="flex items-center gap-1 text-xs text-green-700 bg-green-50 hover:bg-green-100 px-2.5 py-1.5 rounded-lg font-medium transition-colors"
@@ -244,6 +316,17 @@ export function InventoryPage() {
         </div>
       </Modal>
 
+      {editItem && (
+        <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title={`Edit — ${editItem.item_name}`}>
+          <div className="space-y-3">
+            <input className="input" value={editForm.item_name} onChange={e => setEditForm({ ...editForm, item_name: e.target.value })} />
+            <input type="number" className="input" value={editForm.minimum_stock} onChange={e => setEditForm({ ...editForm, minimum_stock: Number(e.target.value) })} placeholder="Min stock" />
+            <input className="input" value={editForm.unit_cost} onChange={e => setEditForm({ ...editForm, unit_cost: e.target.value })} placeholder="Unit cost" />
+            <button className="btn-primary w-full" onClick={() => updateItemMutation.mutate()}>Save</button>
+          </div>
+        </Modal>
+      )}
+
       {/* Transaction Modal */}
       {selectedItem && (
         <Modal
@@ -289,5 +372,6 @@ export function InventoryPage() {
         </Modal>
       )}
     </div>
+    </RequirePropertyScope>
   )
 }

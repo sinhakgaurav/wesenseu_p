@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+from decimal import Decimal
+
 from pydantic import BaseModel, Field
 
 
@@ -10,6 +12,7 @@ class PropertyRoomCategoryBase(BaseModel):
     display_name: str = Field(..., max_length=120)
     description: Optional[str] = None
     sort_order: int = 0
+    base_price: Optional[Decimal] = None
 
 
 class PropertyRoomCategoryCreate(PropertyRoomCategoryBase):
@@ -20,6 +23,7 @@ class PropertyRoomCategoryUpdate(BaseModel):
     display_name: Optional[str] = Field(None, max_length=120)
     description: Optional[str] = None
     sort_order: Optional[int] = None
+    base_price: Optional[Decimal] = None
     is_active: Optional[bool] = None
 
 

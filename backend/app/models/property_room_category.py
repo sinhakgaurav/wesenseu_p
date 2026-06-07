@@ -3,7 +3,9 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Text, Boolean, DateTime, ForeignKey, Integer, UniqueConstraint
+from decimal import Decimal
+
+from sqlalchemy import String, Text, Boolean, DateTime, ForeignKey, Integer, Numeric, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,6 +22,7 @@ class PropertyRoomCategory(Base):
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)  # e.g. Classic Room
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    base_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

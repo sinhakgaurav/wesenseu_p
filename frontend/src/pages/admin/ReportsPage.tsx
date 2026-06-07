@@ -6,6 +6,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import api from '@/lib/api'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 const PERIOD_OPTIONS = [
   { label: '7 days', value: 7 },
@@ -15,35 +17,49 @@ const PERIOD_OPTIONS = [
 
 export function ReportsPage() {
   const [days, setDays] = useState(30)
+  const { propertyId, enabled } = useAdminPropertyId()
+  const propQ = propertyId ? `&property_id=${propertyId}` : ''
 
   const { data: occupancy, isLoading: oLoading } = useQuery({
-    queryKey: ['reports-occupancy', days],
-    queryFn: () => api.get(`/reports/occupancy?days=${days}`).then(r => r.data),
+    queryKey: ['reports-occupancy', days, propertyId],
+    enabled,
+    queryFn: () => api.get(`/reports/occupancy?days=${days}${propQ}`).then(r => r.data),
   })
 
   const { data: tasks, isLoading: tLoading } = useQuery({
-    queryKey: ['reports-tasks', days],
-    queryFn: () => api.get(`/reports/tasks?days=${days}`).then(r => r.data),
+    queryKey: ['reports-tasks', days, propertyId],
+    enabled,
+    queryFn: () => api.get(`/reports/tasks?days=${days}${propQ}`).then(r => r.data),
   })
 
   const { data: tickets, isLoading: tkLoading } = useQuery({
-    queryKey: ['reports-tickets', days],
-    queryFn: () => api.get(`/reports/tickets?days=${days}`).then(r => r.data),
+    queryKey: ['reports-tickets', days, propertyId],
+    enabled,
+    queryFn: () => api.get(`/reports/tickets?days=${days}${propQ}`).then(r => r.data),
   })
 
   const { data: depts = [], isLoading: dLoading } = useQuery<any[]>({
-    queryKey: ['reports-depts', days],
-    queryFn: () => api.get(`/reports/departments?days=${days}`).then(r => r.data),
+    queryKey: ['reports-depts', days, propertyId],
+    enabled,
+    queryFn: () => api.get(`/reports/departments?days=${days}${propQ}`).then(r => r.data),
   })
 
   const { data: inventory = [], isLoading: iLoading } = useQuery<any[]>({
-    queryKey: ['reports-inventory', days],
-    queryFn: () => api.get(`/reports/inventory-consumption?days=${days}`).then(r => r.data),
+    queryKey: ['reports-inventory', days, propertyId],
+    enabled,
+    queryFn: () => api.get(`/reports/inventory-consumption?days=${days}${propQ}`).then(r => r.data),
   })
 
   const { data: revenue = [], isLoading: rLoading } = useQuery<any[]>({
-    queryKey: ['reports-revenue', days],
-    queryFn: () => api.get(`/reports/revenue?days=${days}`).then(r => r.data),
+    queryKey: ['reports-revenue', days, propertyId],
+    enabled,
+    queryFn: () => api.get(`/reports/revenue?days=${days}${propQ}`).then(r => r.data),
+  })
+
+  const { data: attendance = [] } = useQuery<any[]>({
+    queryKey: ['reports-attendance', propertyId],
+    enabled,
+    queryFn: () => api.get(`/reports/attendance?property_id=${propertyId}`).then((r) => r.data),
   })
 
   const isLoading = oLoading || tLoading || tkLoading || dLoading || iLoading || rLoading
@@ -67,6 +83,7 @@ export function ReportsPage() {
   }
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -229,7 +246,38 @@ export function ReportsPage() {
             </div>
           )}
         </div>
+
+        <div className="card lg:col-span-2">
+          <h3 className="font-semibold text-gray-900 mb-4">Attendance / leave (this month)</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500 border-b">
+                  <th className="pb-2">Employee</th>
+                  <th>Present</th>
+                  <th>Leave</th>
+                  <th>Absent</th>
+                  <th>Weekly off</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attendance.length === 0 ? (
+                  <tr><td colSpan={5} className="py-4 text-gray-400">No attendance records</td></tr>
+                ) : attendance.map((a: { employee_id: string; employee_name: string; present_days: number; leave_days: number; absent_days: number; weekly_off_days: number }) => (
+                  <tr key={a.employee_id} className="border-b border-gray-50">
+                    <td className="py-2 font-medium">{a.employee_name}</td>
+                    <td>{a.present_days}</td>
+                    <td>{a.leave_days}</td>
+                    <td>{a.absent_days}</td>
+                    <td>{a.weekly_off_days}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
+    </RequirePropertyScope>
   )
 }

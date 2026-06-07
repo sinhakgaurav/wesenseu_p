@@ -20,6 +20,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    if not insp.has_table("properties"):
+        return
+    cols = {c["name"] for c in insp.get_columns("properties")}
+    if "customer_id" in cols:
+        return
     op.add_column(
         "properties",
         sa.Column("customer_id", UUID(as_uuid=True), nullable=True),

@@ -31,6 +31,8 @@ class Task(Base):
     completed_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     verification_required: Mapped[bool] = mapped_column(default=True)
     escalation_count: Mapped[int] = mapped_column(default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -26,6 +26,13 @@ from app.api.v1.endpoints import (
     support,
     laundry,
     task_sla_policies,
+    catalog,
+    guest_stays,
+    onboarding,
+    contacts,
+    fb,
+    vendors,
+    system,
 )
 
 api_router = APIRouter()
@@ -56,3 +63,10 @@ api_router.include_router(super_admin.router, prefix="/admin", tags=["Super Admi
 api_router.include_router(support.router, prefix="/support", tags=["Customer Support"])
 api_router.include_router(laundry.router, prefix="/laundry", tags=["Laundry"])
 api_router.include_router(task_sla_policies.router, prefix="/task-sla-policies", tags=["Task SLA"])
+api_router.include_router(catalog.router, prefix="/catalog", tags=["Catalog"])
+api_router.include_router(guest_stays.router, prefix="/guest-stays", tags=["Guest Stays"])
+api_router.include_router(onboarding.router, prefix="/onboarding", tags=["Onboarding"])
+api_router.include_router(contacts.router, prefix="/contacts", tags=["Contacts"])
+api_router.include_router(fb.router, prefix="/fb", tags=["F&B"])
+api_router.include_router(vendors.router, prefix="/vendors", tags=["Vendors"])
+api_router.include_router(system.router, prefix="/system", tags=["System"])

@@ -273,8 +273,11 @@ async def department_performance(
         emp_count = emp_count_r.scalar() or 0
 
         tasks_r = await db.execute(
-            select(func.count(Task.id)).where(
+            select(func.count(Task.id))
+            .join(Employee, Task.assigned_to == Employee.id)
+            .where(
                 Task.property_id == prop_id,
+                Employee.department_id == dept.id,
                 Task.status.in_(["completed", "approved"]),
                 Task.completed_at >= start_dt,
             )
@@ -283,8 +286,10 @@ async def department_performance(
 
         avg_r = await db.execute(
             select(func.avg(func.extract("epoch", Task.completed_at - Task.created_at) / 60))
+            .join(Employee, Task.assigned_to == Employee.id)
             .where(
                 Task.property_id == prop_id,
+                Employee.department_id == dept.id,
                 Task.status.in_(["completed", "approved"]),
                 Task.completed_at >= start_dt,
                 Task.completed_at.isnot(None),
@@ -394,3 +399,54 @@ async def revenue_report(
         }
         for i in range(days)
     ]
+
+
+@router.get("/attendance")
+async def attendance_report(
+    property_id: Optional[uuid.UUID] = None,
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    from app.models.employee import Attendance
+
+    prop_id = property_id or current_user.property_id
+    now = datetime.utcnow()
+    m = month or now.month
+    y = year or now.year
+    start = date(y, m, 1)
+    if m == 12:
+        end = date(y + 1, 1, 1) - timedelta(days=1)
+    else:
+        end = date(y, m + 1, 1) - timedelta(days=1)
+
+    emps = (
+        await db.execute(
+            select(Employee).where(Employee.property_id == prop_id, Employee.status == "active")
+        )
+    ).scalars().all()
+
+    rows = []
+    for emp in emps:
+        recs = (
+            await db.execute(
+                select(Attendance).where(
+                    Attendance.employee_id == emp.id,
+                    Attendance.date >= start,
+                    Attendance.date <= end,
+                )
+            )
+        ).scalars().all()
+        rows.append(
+            {
+                "employee_id": str(emp.id),
+                "employee_name": emp.full_name,
+                "present_days": sum(1 for r in recs if r.status == "present"),
+                "absent_days": sum(1 for r in recs if r.status == "absent"),
+                "leave_days": sum(1 for r in recs if r.status == "leave"),
+                "half_days": sum(1 for r in recs if r.status == "half_day"),
+                "weekly_off_days": sum(1 for r in recs if r.status == "weekly_off"),
+            }
+        )
+    return rows

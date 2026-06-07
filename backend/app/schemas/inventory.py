@@ -36,6 +36,7 @@ class InventoryItemResponse(InventoryItemBase):
     property_id: uuid.UUID
     item_code: Optional[str] = None
     current_stock: int
+    photo_url: Optional[str] = None
     is_active: bool
     is_low_stock: bool = False
     created_at: datetime

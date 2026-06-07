@@ -2,8 +2,12 @@ import { useState } from 'react'
 import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { PublicNav } from '@/components/layout/PublicNav'
+import { useCmsPage, htmlFromCmsPage } from '@/hooks/useCmsPage'
+import { CmsPageHero, CmsHtmlBody } from '@/components/public/CmsPageHero'
 
 export function ContactPage() {
+  const { data: cmsPage } = useCmsPage('contact')
+  const cmsHtml = htmlFromCmsPage(cmsPage ?? undefined)
   const [form, setForm] = useState({ name: '', email: '', company: '', message: '' })
   const [sending, setSending] = useState(false)
 
@@ -20,12 +24,14 @@ export function ContactPage() {
     <div className="min-h-screen bg-white">
       <PublicNav />
 
-      <section className="bg-gradient-to-br from-blue-50 to-white pt-20 pb-12">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Get in Touch</h1>
-          <p className="text-gray-600">Book a demo, ask a question, or just say hello.</p>
-        </div>
-      </section>
+      <CmsPageHero
+        page={cmsPage}
+        fallbackTitle="Get in Touch"
+        fallbackSubtitle="Book a demo, ask a question, or just say hello."
+        className="bg-gradient-to-br from-blue-50 to-white pt-20 pb-12"
+      />
+
+      {cmsHtml && <CmsHtmlBody html={cmsHtml} className="max-w-3xl mx-auto px-6 pb-8" />}
 
       <section className="py-16 max-w-6xl mx-auto px-6">
         <div className="grid md:grid-cols-2 gap-12">

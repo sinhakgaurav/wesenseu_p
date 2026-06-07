@@ -9,8 +9,14 @@ from app.models.room import Room, RoomAuditLog
 from app.models.task import Task
 from app.models.employee import Employee
 from app.models.property_room_category import PropertyRoomCategory
+from app.models.department import Department
 from app.schemas.room import RoomCreate, RoomUpdate, RoomResponse, RoomStatusUpdate, GuestCheckInRequest
+from app.schemas.p2 import BulkRoomCreate, RoomVariantCreate
+from app.models.p2_extensions import RoomVariant
 from app.api.v1.deps import get_current_user
+from app.services.guest_stay import open_guest_stay, close_active_stay
+from app.services.task_assignment import pick_longest_idle_free_employee
+from app.services.room_bulk import bulk_create_rooms as bulk_create_rooms_service
 
 router = APIRouter()
 
@@ -108,6 +114,67 @@ async def create_room(
     return room
 
 
+@router.post("/bulk", response_model=List[RoomResponse], status_code=status.HTTP_201_CREATED)
+async def bulk_create_rooms(
+    data: BulkRoomCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role not in ("super_admin", "property_manager"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    created = await bulk_create_rooms_service(
+        db,
+        property_id=data.property_id,
+        property_room_category_id=data.property_room_category_id,
+        count=data.count,
+        start_number=data.start_number,
+        room_number_prefix=data.room_number_prefix,
+        floor_number=data.floor_number,
+        room_view_catalog_id=data.room_view_catalog_id,
+    )
+    await db.commit()
+    for r in created:
+        await db.refresh(r)
+    return created
+
+
+@router.post("/variants", status_code=status.HTTP_201_CREATED)
+async def create_room_variant(
+    data: RoomVariantCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role not in ("super_admin", "property_manager"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    variant = RoomVariant(
+        property_id=data.property_id,
+        property_room_category_id=data.property_room_category_id,
+        room_view_catalog_id=data.room_view_catalog_id,
+        variant_label=data.variant_label,
+        room_count=data.room_count,
+        price_override=data.price_override,
+        floor_number=data.floor_number,
+        room_number_prefix=data.room_number_prefix,
+        start_number=data.start_number,
+    )
+    db.add(variant)
+    rooms_created: list[Room] = []
+    if data.create_rooms:
+        rooms_created = await bulk_create_rooms_service(
+            db,
+            property_id=data.property_id,
+            property_room_category_id=data.property_room_category_id,
+            count=data.room_count,
+            start_number=data.start_number,
+            room_number_prefix=data.room_number_prefix or "",
+            floor_number=data.floor_number,
+            room_view_catalog_id=data.room_view_catalog_id,
+        )
+    await db.commit()
+    await db.refresh(variant)
+    return {"variant_id": str(variant.id), "rooms_created": len(rooms_created)}
+
+
 @router.post("/{room_id}/guest-check-in", response_model=RoomResponse)
 async def guest_check_in(
     room_id: uuid.UUID,
@@ -141,6 +208,17 @@ async def guest_check_in(
         notes=f"Guest: {data.guest_name}",
     )
     db.add(audit)
+    try:
+        await open_guest_stay(
+            db,
+            room,
+            guest_name=data.guest_name,
+            guest_phone=data.guest_phone,
+            expected_check_out=data.expected_check_out,
+            notes=data.notes,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     await db.commit()
     await db.refresh(room)
     return room
@@ -259,6 +337,8 @@ async def checkout_room(
     room.guest_phone = None
     room.expected_check_out = None
 
+    await close_active_stay(db, room_id)
+
     task = Task(
         property_id=room.property_id,
         room_id=room_id,
@@ -267,8 +347,27 @@ async def checkout_room(
         priority="high",
         description=f"Clean room {room.room_number} after guest checkout",
         status="pending",
+        verification_required=True,
     )
     db.add(task)
+    await db.flush()
+
+    hk_dept = (
+        await db.execute(
+            select(Department).where(
+                Department.property_id == room.property_id,
+                Department.name == "Housekeeping",
+                Department.is_active == True,
+            )
+        )
+    ).scalar_one_or_none()
+    emp = await pick_longest_idle_free_employee(
+        db, room.property_id, department_id=hk_dept.id if hk_dept else None
+    )
+    if emp:
+        task.assigned_to = emp.id
+        task.status = "assigned"
+
     await db.commit()
     await db.refresh(room)
     return room

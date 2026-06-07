@@ -18,11 +18,19 @@ This document maps the **Technical Architecture, Database Design & UI Specificat
 
 This section records **follow-up verification** of checklist claims against the Monitour repo (static audit: OpenAPI routes, router registration, frontend routes). Re-run after major merges.
 
-**Last verified:** 2026-05-14 (includes `/admin/departments` UI + WesenseU multipart dispatch docs).  
+**Last verified:** 2026-05-20 (CRUD + admin UI completion pass).
 
 | # | Verification task | Result | Evidence / method |
 |---|-------------------|--------|-------------------|
-| V1 | FastAPI application imports and exposes routes | **Pass** | `python -c "import dev_start; from app.main import app"` — non-zero route count |
+| V1 | FastAPI application imports and exposes routes | **Pass** | `python scripts/verify_requirements_flow.py` |
+| V12 | Vendors CRUD API | **Pass** | `/api/v1/vendors` |
+| V13 | Catalog item PATCH/DELETE | **Pass** | `/api/v1/catalog/items/{id}` |
+| V14 | Contacts PATCH | **Pass** | `/api/v1/contacts/properties/{id}/{contact_id}` |
+| V15 | F&B outlet/menu U/D | **Pass** | `/api/v1/fb/outlets`, `/fb/menu/{id}` |
+| V16 | Onboarding sessions list | **Pass** | `GET /api/v1/onboarding/sessions` |
+| V17 | Admin UI: property settings, F&B, SLA, properties | **Pass** | `PropertySettingsPage`, `FnBPage`, `TaskSlaPage`, `PropertiesPage` |
+| V18 | P2 sample seeder | **Pass** | `app/db/seed_p2_sample.py` via `init_db` |
+| V19 | CRUD matrix doc | **Pass** | `docs/CRUD_VERIFICATION.md` |
 | V2 | Auth: login, refresh, logout | **Pass** | `/api/v1/auth/login`, `/auth/refresh-token`, `/auth/logout` present |
 | V3 | Auth: forgot-password | **Fail (expected)** | No route in `auth.py`; matches **Planned** row in §5 |
 | V4 | Core domain routers registered | **Pass** | `router.py` includes `rooms`, `tasks`, `tickets`, `inventory`, `attendance`, `verification`, `surveillance`, `laundry`, `task_sla_policies`, `support`, `plans`, `pages`, … |

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_current_user
 from app.constants.benchmark_aspects import SUGGESTED_BENCHMARK_ASPECTS
+from app.services.category_availability import category_availability
 from app.db.base import get_db
 from app.models.benchmark import RoomCategoryBenchmark
 from app.models.employee import Employee
@@ -162,3 +163,13 @@ async def delete_room_category(
     await _get_property_for_user(db, current_user, row.property_id)
     row.is_active = False
     await db.commit()
+
+
+@router.get("/availability")
+async def room_category_availability(
+    property_id: Optional[uuid.UUID] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    prop = await _get_property_for_user(db, current_user, property_id)
+    return await category_availability(db, prop.id)

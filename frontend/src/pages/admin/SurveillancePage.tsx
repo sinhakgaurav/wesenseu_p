@@ -4,16 +4,15 @@ import { Camera, AlertTriangle, Shield, Eye, Plus, Wifi, Trash2, Power, RefreshC
 import { Badge } from '@/components/ui/Badge'
 import api from '@/lib/api'
 import toast from 'react-hot-toast'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 
 const severityColors: Record<string, string> = {
   critical: 'red', high: 'orange', medium: 'yellow', low: 'green',
 }
 
 export function SurveillancePage() {
-  const user = useSelector((state: RootState) => state.auth.user)
-  const propertyId = user?.property_id
+  const { propertyId, enabled } = useAdminPropertyId()
   const qc = useQueryClient()
   const [showDiscover, setShowDiscover] = useState(false)
   const [discoveredCams, setDiscoveredCams] = useState<any[]>([])
@@ -31,7 +30,8 @@ export function SurveillancePage() {
 
   const { data: events = [], isLoading: eventsLoading, refetch: refetchEvents } = useQuery({
     queryKey: ['surveillance-events', propertyId],
-    queryFn: () => api.get(`/surveillance/events${propertyId ? `?property_id=${propertyId}` : ''}`).then(r => r.data),
+    enabled,
+    queryFn: () => api.get(`/surveillance/events?property_id=${propertyId}`).then(r => r.data),
     refetchInterval: 30000,
   })
 
@@ -78,6 +78,7 @@ export function SurveillancePage() {
   const openCount = events.filter((e: any) => e.status === 'open').length
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -319,5 +320,6 @@ export function SurveillancePage() {
         )}
       </div>
     </div>
+    </RequirePropertyScope>
   )
 }

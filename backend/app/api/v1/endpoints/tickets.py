@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime, timedelta
 import uuid
@@ -8,8 +9,15 @@ import random
 import string
 
 from app.db.base import get_db
+from app.db.soft_delete import apply_soft_delete, not_deleted_clause, restore_soft_deleted
 from app.models.ticket import Ticket, TicketComment
 from app.models.employee import Employee
+from app.models.department import Department
+from app.models.room import Room
+from app.constants.ticket_department import TICKET_TYPE_DEPARTMENT
+from app.services.guest_stay import get_active_stay_for_room
+from app.services.ticket_task import create_task_for_ticket
+from app.services.notify_managers import notify_managers
 from app.schemas.ticket import TicketCreate, TicketUpdate, TicketResponse, TicketCommentCreate
 from app.api.v1.deps import get_current_user
 
@@ -38,10 +46,15 @@ async def list_tickets(
     room_id: Optional[uuid.UUID] = None,
     skip: int = 0,
     limit: int = 50,
+    include_deleted: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user: Employee = Depends(get_current_user),
 ):
-    query = select(Ticket)
+    query = select(Ticket).options(selectinload(Ticket.comments))
+    if not include_deleted:
+        clause = not_deleted_clause(Ticket)
+        if clause is not None:
+            query = query.where(clause)
     prop_id = property_id or current_user.property_id
     if prop_id:
         query = query.where(Ticket.property_id == prop_id)
@@ -74,6 +87,18 @@ async def create_ticket(
         sla_deadline=datetime.utcnow() + timedelta(hours=sla_hours),
     )
     db.add(ticket)
+    await db.flush()
+    await create_task_for_ticket(db, ticket)
+    await notify_managers(
+        db,
+        ticket.property_id,
+        "ticket_created",
+        f"Ticket {ticket.ticket_number}",
+        ticket.title,
+        department_id=ticket.department_id,
+        reference_type="ticket",
+        reference_id=ticket.id,
+    )
     await db.commit()
     await db.refresh(ticket)
     return ticket
@@ -85,7 +110,9 @@ async def get_ticket(
     db: AsyncSession = Depends(get_db),
     current_user: Employee = Depends(get_current_user),
 ):
-    result = await db.execute(select(Ticket).where(Ticket.id == ticket_id))
+    result = await db.execute(
+        select(Ticket).options(selectinload(Ticket.comments)).where(Ticket.id == ticket_id)
+    )
     ticket = result.scalar_one_or_none()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -152,8 +179,27 @@ async def delete_ticket(
     ticket = result.scalar_one_or_none()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    apply_soft_delete(ticket)
     ticket.status = "closed"
     await db.commit()
+
+
+@router.post("/{ticket_id}/restore", response_model=TicketResponse)
+async def restore_ticket(
+    ticket_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role not in ("super_admin", "property_manager"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    result = await db.execute(select(Ticket).where(Ticket.id == ticket_id))
+    ticket = result.scalar_one_or_none()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    restore_soft_deleted(ticket)
+    await db.commit()
+    await db.refresh(ticket)
+    return ticket
 
 
 @router.post("/guest", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
@@ -163,13 +209,56 @@ async def create_guest_ticket(
 ):
     """Public endpoint for guest ticket creation via QR code."""
     sla_hours = SLA_HOURS.get(data.priority, 12)
+    payload = data.model_dump()
+    department_id = payload.get("department_id")
+    if not department_id and data.room_id:
+        dept_name = TICKET_TYPE_DEPARTMENT.get(data.ticket_type)
+        if dept_name:
+            room = (await db.execute(select(Room).where(Room.id == data.room_id))).scalar_one_or_none()
+            if room:
+                dept = (
+                    await db.execute(
+                        select(Department).where(
+                            Department.property_id == room.property_id,
+                            Department.name == dept_name,
+                            Department.is_active == True,
+                        )
+                    )
+                ).scalar_one_or_none()
+                if dept:
+                    department_id = dept.id
+        payload["department_id"] = department_id
+
+    guest_stay_id = None
+    if data.room_id:
+        stay = await get_active_stay_for_room(db, data.room_id)
+        if stay:
+            guest_stay_id = stay.id
+            if not payload.get("guest_name"):
+                payload["guest_name"] = stay.guest_name
+            if not payload.get("guest_phone"):
+                payload["guest_phone"] = stay.guest_phone
+
     ticket = Ticket(
-        **data.model_dump(),
+        **payload,
+        guest_stay_id=guest_stay_id,
         ticket_number=generate_ticket_number(),
         sla_deadline=datetime.utcnow() + timedelta(hours=sla_hours),
         created_by_guest=True,
     )
     db.add(ticket)
+    await db.flush()
+    await create_task_for_ticket(db, ticket)
+    await notify_managers(
+        db,
+        ticket.property_id,
+        "ticket_created",
+        f"Ticket {ticket.ticket_number}",
+        ticket.title,
+        department_id=ticket.department_id,
+        reference_type="ticket",
+        reference_id=ticket.id,
+    )
     await db.commit()
     await db.refresh(ticket)
     return ticket

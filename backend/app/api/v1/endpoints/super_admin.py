@@ -228,6 +228,138 @@ async def toggle_module(
     return {"module_name": module_name, "is_enabled": data.is_enabled}
 
 
+# ── Business hierarchy (customer → property → modules) ───────────────────────
+
+class CustomerStatusAction(BaseModel):
+    subscription_status: str  # active | suspended | cancelled
+    is_active: Optional[bool] = None
+    notes: Optional[str] = None
+
+
+@router.get("/hierarchy")
+async def business_hierarchy(
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    """Customers (businesses) with properties, approval status, and module summary."""
+    _require_super_admin(current_user)
+
+    customers = (await db.execute(select(Customer).order_by(Customer.company_name))).scalars().all()
+    all_props = (await db.execute(select(Property))).scalars().all()
+    approvals = {
+        a.property_id: a
+        for a in (await db.execute(select(PropertyApproval))).scalars().all()
+    }
+    props_by_customer: dict = {}
+    orphan_props: list = []
+    for p in all_props:
+        if p.customer_id:
+            props_by_customer.setdefault(p.customer_id, []).append(p)
+        else:
+            orphan_props.append(p)
+
+    out = []
+    for c in customers:
+        props = props_by_customer.get(c.id, [])
+        prop_rows = []
+        for p in props:
+            appr = approvals.get(p.id)
+            prop_rows.append({
+                "id": str(p.id),
+                "name": p.name,
+                "city": p.city,
+                "subscription_plan": p.subscription_plan,
+                "subscription_status": p.subscription_status,
+                "is_active": p.is_active,
+                "total_rooms": p.total_rooms,
+                "approval": {
+                    "id": str(appr.id) if appr else None,
+                    "status": appr.status if appr else None,
+                    "requested_plan": appr.requested_plan if appr else None,
+                } if appr else None,
+            })
+        out.append({
+            "id": str(c.id),
+            "company_name": c.company_name,
+            "contact_name": c.contact_name,
+            "email": c.email,
+            "subscription_plan": c.subscription_plan,
+            "subscription_status": c.subscription_status,
+            "is_active": c.is_active,
+            "property_count": len(props),
+            "properties": prop_rows,
+        })
+
+    return {
+        "customers": out,
+        "unassigned_properties": [
+            {
+                "id": str(p.id),
+                "name": p.name,
+                "subscription_status": p.subscription_status,
+                "approval": {
+                    "id": str(approvals[p.id].id),
+                    "status": approvals[p.id].status,
+                } if p.id in approvals else None,
+            }
+            for p in orphan_props
+        ],
+    }
+
+
+@router.get("/customers")
+async def list_customers_admin(
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    _require_super_admin(current_user)
+    rows = (await db.execute(select(Customer).order_by(Customer.company_name).limit(limit))).scalars().all()
+    return [
+        {
+            "id": str(c.id),
+            "company_name": c.company_name,
+            "email": c.email,
+            "subscription_plan": c.subscription_plan,
+            "subscription_status": c.subscription_status,
+            "is_active": c.is_active,
+        }
+        for c in rows
+    ]
+
+
+@router.patch("/customers/{customer_id}/status")
+async def update_customer_status(
+    customer_id: uuid.UUID,
+    data: CustomerStatusAction,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    """Approve / suspend / cancel a business (B2B customer account)."""
+    _require_super_admin(current_user)
+    if data.subscription_status not in ("active", "suspended", "cancelled"):
+        raise HTTPException(status_code=400, detail="Invalid subscription_status")
+
+    customer = await db.get(Customer, customer_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    customer.subscription_status = data.subscription_status
+    if data.is_active is not None:
+        customer.is_active = data.is_active
+    elif data.subscription_status in ("suspended", "cancelled"):
+        customer.is_active = False
+    elif data.subscription_status == "active":
+        customer.is_active = True
+
+    await db.commit()
+    return {
+        "id": str(customer.id),
+        "subscription_status": customer.subscription_status,
+        "is_active": customer.is_active,
+    }
+
+
 # ── Platform stats ─────────────────────────────────────────────────────────────
 
 @router.get("/stats")
@@ -339,5 +471,5 @@ async def admin_delete_employee(
         raise HTTPException(status_code=404, detail="Employee not found")
     if emp.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
-    await db.delete(emp)
+    emp.status = "inactive"
     await db.commit()

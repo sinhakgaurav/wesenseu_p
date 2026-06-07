@@ -2,8 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { UserRound, LogIn, LogOut } from 'lucide-react'
 import api from '@/lib/api'
 import toast from 'react-hot-toast'
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/store'
+import { useAdminPropertyId } from '@/hooks/useAdminPropertyId'
+import { RequirePropertyScope } from '@/components/layout/RequirePropertyScope'
 import type { Room } from '@/lib/types'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { Modal } from '@/components/ui/Modal'
@@ -11,8 +11,7 @@ import { useState } from 'react'
 
 export function GuestStaysPage() {
   const qc = useQueryClient()
-  const user = useSelector((s: RootState) => s.auth.user)
-  const propertyId = user?.property_id
+  const { propertyId, enabled } = useAdminPropertyId()
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [roomId, setRoomId] = useState('')
   const [guestName, setGuestName] = useState('')
@@ -21,7 +20,7 @@ export function GuestStaysPage() {
   const { data: stays = [], isLoading } = useQuery({
     queryKey: ['guest-stays', propertyId],
     queryFn: () => api.get(`/rooms/guest-stays?property_id=${propertyId}`).then(r => r.data),
-    enabled: !!propertyId,
+    enabled,
   })
 
   const { data: vacantRooms = [] } = useQuery({
@@ -30,7 +29,7 @@ export function GuestStaysPage() {
       api
         .get(`/rooms?property_id=${propertyId}&room_status=vacant&limit=200`)
         .then(r => r.data),
-    enabled: !!propertyId && showCheckIn,
+    enabled: enabled && showCheckIn,
   })
 
   const checkInMut = useMutation({
@@ -58,10 +57,10 @@ export function GuestStaysPage() {
     },
   })
 
-  if (!propertyId) return <p className="text-gray-500">No property context.</p>
   if (isLoading) return <PageLoader />
 
   return (
+    <RequirePropertyScope>
     <div>
       <div className="page-header">
         <div>
@@ -133,5 +132,6 @@ export function GuestStaysPage() {
         </div>
       </Modal>
     </div>
+    </RequirePropertyScope>
   )
 }

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List, Optional
@@ -6,6 +6,7 @@ from pydantic import BaseModel
 import uuid
 
 from app.db.base import get_db
+from app.db.soft_delete import apply_soft_delete, not_deleted_clause, restore_soft_deleted
 from app.models.feedback import Feedback
 from app.models.employee import Employee
 from app.schemas.feedback import FeedbackCreate, FeedbackResponse
@@ -53,10 +54,15 @@ async def list_feedback(
     min_rating: Optional[int] = None,
     skip: int = 0,
     limit: int = 50,
+    include_deleted: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user: Employee = Depends(get_current_user),
 ):
     query = select(Feedback)
+    if not include_deleted:
+        clause = not_deleted_clause(Feedback)
+        if clause is not None:
+            query = query.where(clause)
     prop_id = property_id or current_user.property_id
     if prop_id:
         query = query.where(Feedback.property_id == prop_id)
@@ -143,5 +149,23 @@ async def delete_feedback(
     fb = result.scalar_one_or_none()
     if not fb:
         raise HTTPException(status_code=404, detail="Feedback not found")
-    await db.delete(fb)
+    apply_soft_delete(fb)
     await db.commit()
+
+
+@router.post("/{feedback_id}/restore", response_model=FeedbackResponse)
+async def restore_feedback(
+    feedback_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    if current_user.role not in ("super_admin", "property_manager"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    result = await db.execute(select(Feedback).where(Feedback.id == feedback_id))
+    fb = result.scalar_one_or_none()
+    if not fb:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    restore_soft_deleted(fb)
+    await db.commit()
+    await db.refresh(fb)
+    return fb

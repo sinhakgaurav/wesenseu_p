@@ -43,9 +43,10 @@ if __name__ == "__main__":
         from app.db.base import engine, Base
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        from app.db.init_db import auto_seed_plans, ensure_demo_users
+        from app.db.init_db import auto_seed_plans, ensure_cms_pages, ensure_demo_users
         await ensure_demo_users()
         await auto_seed_plans()
+        await ensure_cms_pages()
 
     asyncio.run(_bootstrap())
 

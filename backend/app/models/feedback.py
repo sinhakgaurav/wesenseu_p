@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import String, DateTime, ForeignKey, Numeric, Text, Integer
+from typing import Optional
+from sqlalchemy import String, DateTime, ForeignKey, Numeric, Text, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
@@ -24,6 +25,8 @@ class Feedback(Base):
     is_public: Mapped[bool] = mapped_column(default=False)
     status: Mapped[str] = mapped_column(String(20), default="pending")
     # pending | reviewed | flagged | resolved
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     room: Mapped["Room"] = relationship("Room", back_populates="feedback")

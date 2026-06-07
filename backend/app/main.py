@@ -5,25 +5,32 @@ from contextlib import asynccontextmanager
 import os
 
 from app.core.config import settings
+from app.core.logging_config import setup_logging, get_logger
+from app.middleware.request_logging import RequestLoggingMiddleware
 from app.api.v1.router import api_router
 from app.db.base import engine, Base
 import app.models  # noqa: F401 — ensure all models are registered before create_all
 
+logger = get_logger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create all tables
+    logger.info("Starting Monitour API (env=%s debug=%s)", settings.APP_ENV, settings.DEBUG)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    # Auto-seed demo data used by the local UI.
     try:
         from app.db.init_db import auto_seed_plans, ensure_demo_users
         await ensure_demo_users()
         await auto_seed_plans()
+        logger.info("Demo users and plans seed completed")
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning("Startup seed failed: %s", e)
+        logger.warning("Startup seed failed: %s", e)
     yield
+    logger.info("Shutting down Monitour API")
+
+
+setup_logging(level=settings.LOG_LEVEL, app_env=settings.APP_ENV)
 
 
 app = FastAPI(
@@ -35,6 +42,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS + [settings.FRONTEND_URL],
